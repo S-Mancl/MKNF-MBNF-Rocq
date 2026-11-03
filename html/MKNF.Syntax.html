@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="coqdoc.css" rel="stylesheet" type="text/css">
+  <title>MKNF and MBNF, mechanised</title>
+</head>
+<body>
+<div id="page">
+<div id="header">
+  <nav class="site-nav" aria-label="Documentation navigation">
+    <a href="../index.html">Start</a>
+    <a href="toc.html">Contents</a>
+    <a href="../sources.zip" download>Sources ZIP</a>
+  </nav>
+</div>
+<div id="main">
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Stdlib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">Bool</span> <span class="id" title="library">List</span> <span class="id" title="library">String</span> <span class="id" title="library">Arith.PeanoNat</span> <span class="id" title="library">Vectors.Fin</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MKNF</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="MKNF.Finite.html#"><span class="id" title="library">Finite</span></a>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="module">ListNotations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Set Implicit Arguments</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab1"></a><h1 class="section">Chapter 1: Syntax</h1>
+
+
+<div class="paragraph"> </div>
+
+    The first step when formalising a logic is specifying its syntax. We will do it first for MKNF and, later on, for MBNF too.
+
+<div class="paragraph"> </div>
+
+    In the propositional language, we will use indexed propositions, in order to prevent malformed formulas: if we have <span class="inlinecode"><span class="id" title="var">n</span></span> atoms, it shouldn't be possible to refer to any proposition whose index is <span class="inlinecode">≥</span> <span class="inlinecode"><span class="id" title="var">n</span></span>.
+
+<div class="paragraph"> </div>
+
+    Throughout the following, feel free to ignore <span class="inlinecode"><span class="id" title="var">n</span></span>, as it only serves that purpose. Each atom, due to this construction, will have type <span class="inlinecode"><span class="id" title="var">Fin.t</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span>.
+
+<div class="paragraph"> </div>
+
+    Now, onwards to propositional MKNF grammar. 
+    The following EBNF is the surface notation represented by <span class="inlinecode"><a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a></span>.
+    Constructors appear at the right in order to simplify the translation between EBNF and Rocq syntax.
+
+<div class="paragraph"> </div>
+
+<pre>
+    atom       ::= p_0 | ... | p_(n-1)                       FAtom
+    formula    ::= atom                                      FAtom
+                 | bottom                                    FBot
+                 | "(" formula "and" formula ")"              FAnd
+                 | "(" formula "or" formula ")"               FOr
+                 | "(" formula "-&gt;" formula ")"               FImp
+                 | "classical-not" formula                   FNeg
+                 | "K" formula                               FK
+                 | "not" formula                             FNot
+    theory     ::= "[" formula { "," formula } "]"             list formula
+</pre>
+
+<div class="paragraph"> </div>
+
+    Parentheses are used to specify precedences.
+    It hasn't probably gone unnoticed to the keen reader how there are two negation operators.
+    The FNeg one is the classical negation, while the FNot is negation-as-a-failure, a concept which will be detailed more extensively later on.
+
+<div class="paragraph"> </div>
+
+ The following is the syntax tree for MKNF formulas. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Inductive</span> <a id="formula" class="idref" href="#formula"><span class="id" title="definition, inductive"><span id="formula_rect" class="id"><span id="formula_ind" class="id"><span id="formula_rec" class="id"><span id="formula_sind" class="id">formula</span></span></span></span></span></a> (<a id="n:1" class="idref" href="#n:1"><span class="id" title="binder">n</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>) : <span class="id" title="keyword">Type</span> :=<br/>
+| <a id="FAtom" class="idref" href="#FAtom"><span class="id" title="constructor">FAtom</span></a> : <span class="id" title="inductive">Fin.t</span> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a><br/>
+| <a id="FBot" class="idref" href="#FBot"><span class="id" title="constructor">FBot</span></a> : <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a><br/>
+| <a id="FAnd" class="idref" href="#FAnd"><span class="id" title="constructor">FAnd</span></a> : <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a><br/>
+| <a id="FOr" class="idref" href="#FOr"><span class="id" title="constructor">FOr</span></a> : <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a><br/>
+| <a id="FImp" class="idref" href="#FImp"><span class="id" title="constructor">FImp</span></a> : <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a><br/>
+| <a id="FNeg" class="idref" href="#FNeg"><span class="id" title="constructor">FNeg</span></a> : <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a><br/>
+| <a id="FK" class="idref" href="#FK"><span class="id" title="constructor">FK</span></a> : <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a><br/>
+| <a id="FNot" class="idref" href="#FNot"><span class="id" title="constructor">FNot</span></a> : <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:1"><span class="id" title="variable">n</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Arguments</span> <a class="idref" href="MKNF.Syntax.html#FAtom"><span class="id" title="constructor">FAtom</span></a> {<span class="id" title="var">n</span>} <span class="id" title="var">_</span>.<br/>
+<span class="id" title="keyword">Arguments</span> <a class="idref" href="MKNF.Syntax.html#FBot"><span class="id" title="constructor">FBot</span></a> {<span class="id" title="var">n</span>}.<br/>
+<span class="id" title="keyword">Arguments</span> <a class="idref" href="MKNF.Syntax.html#FAnd"><span class="id" title="constructor">FAnd</span></a> {<span class="id" title="var">n</span>} <span class="id" title="var">_</span> <span class="id" title="var">_</span>.<br/>
+<span class="id" title="keyword">Arguments</span> <a class="idref" href="MKNF.Syntax.html#FOr"><span class="id" title="constructor">FOr</span></a> {<span class="id" title="var">n</span>} <span class="id" title="var">_</span> <span class="id" title="var">_</span>.<br/>
+<span class="id" title="keyword">Arguments</span> <a class="idref" href="MKNF.Syntax.html#FImp"><span class="id" title="constructor">FImp</span></a> {<span class="id" title="var">n</span>} <span class="id" title="var">_</span> <span class="id" title="var">_</span>.<br/>
+<span class="id" title="keyword">Arguments</span> <a class="idref" href="MKNF.Syntax.html#FNeg"><span class="id" title="constructor">FNeg</span></a> {<span class="id" title="var">n</span>} <span class="id" title="var">_</span>.<br/>
+<span class="id" title="keyword">Arguments</span> <a class="idref" href="MKNF.Syntax.html#FK"><span class="id" title="constructor">FK</span></a> {<span class="id" title="var">n</span>} <span class="id" title="var">_</span>.<br/>
+<span class="id" title="keyword">Arguments</span> <a class="idref" href="MKNF.Syntax.html#FNot"><span class="id" title="constructor">FNot</span></a> {<span class="id" title="var">n</span>} <span class="id" title="var">_</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A theory is a list of formulas to be satisfied together. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <a id="theory" class="idref" href="#theory"><span class="id" title="definition">theory</span></a> <a id="n:4" class="idref" href="#n:4"><span class="id" title="binder">n</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> (<a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:4"><span class="id" title="variable">n</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+**
+    For readability reasons, we define a high-level notation, more similar to the one used in the papers.
+<pre>
+    atom(p)   atom p
+    bot       falsity
+    ~ F       classical negation
+    F and G   conjunction
+    F or G    disjunction
+    F implies G
+    K F       knowledge
+    not F     negation as failure
+</pre>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Declare Scope</span> <span class="id" title="var">mknf_scope</span>.<br/>
+<span class="id" title="keyword">Delimit</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">mknf_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">mknf</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Notation</span> <a id="b9cf48312469891f17ac142177b2592e" class="idref" href="#b9cf48312469891f17ac142177b2592e"><span class="id" title="notation">&quot;</span></a>'atom' '(' a ')'" := (<a class="idref" href="MKNF.Syntax.html#FAtom"><span class="id" title="constructor">FAtom</span></a> <span class="id" title="var">a</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0, <span class="id" title="var">a</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 99, <span class="id" title="var">format</span> "'atom' '(' a ')'") : <span class="id" title="var">mknf_scope</span>.<br/>
+<span class="id" title="keyword">Notation</span> <a id="::mknf_scope:'bot'" class="idref" href="#::mknf_scope:'bot'"><span class="id" title="notation">&quot;</span></a>'bot'" := <a class="idref" href="MKNF.Syntax.html#FBot"><span class="id" title="constructor">FBot</span></a> : <span class="id" title="var">mknf_scope</span>.<br/>
+<span class="id" title="keyword">Notation</span> <a id="00f238096e0ddfc1d58f0878205de687" class="idref" href="#00f238096e0ddfc1d58f0878205de687"><span class="id" title="notation">&quot;</span></a>~ p" := (<a class="idref" href="MKNF.Syntax.html#FNeg"><span class="id" title="constructor">FNeg</span></a> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 75, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">mknf_scope</span>.<br/>
+<span class="id" title="keyword">Notation</span> <a id="::mknf_scope:'K'_x" class="idref" href="#::mknf_scope:'K'_x"><span class="id" title="notation">&quot;</span></a>'K' p" := (<a class="idref" href="MKNF.Syntax.html#FK"><span class="id" title="constructor">FK</span></a> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 75, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">mknf_scope</span>.<br/>
+<span class="id" title="keyword">Notation</span> <a id="::mknf_scope:'not'_x" class="idref" href="#::mknf_scope:'not'_x"><span class="id" title="notation">&quot;</span></a>'not' p" := (<a class="idref" href="MKNF.Syntax.html#FNot"><span class="id" title="constructor">FNot</span></a> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 75, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">mknf_scope</span>.<br/>
+<span class="id" title="keyword">Notation</span> <a id="::mknf_scope:x_'and'_x" class="idref" href="#::mknf_scope:x_'and'_x"><span class="id" title="notation">&quot;</span></a>p 'and' q" := (<a class="idref" href="MKNF.Syntax.html#FAnd"><span class="id" title="constructor">FAnd</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 80, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">mknf_scope</span>.<br/>
+<span class="id" title="keyword">Notation</span> <a id="::mknf_scope:x_'or'_x" class="idref" href="#::mknf_scope:x_'or'_x"><span class="id" title="notation">&quot;</span></a>p 'or' q" := (<a class="idref" href="MKNF.Syntax.html#FOr"><span class="id" title="constructor">FOr</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 85, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">mknf_scope</span>.<br/>
+<span class="id" title="keyword">Notation</span> <a id="::mknf_scope:x_'implies'_x" class="idref" href="#::mknf_scope:x_'implies'_x"><span class="id" title="notation">&quot;</span></a>p 'implies' q" := (<a class="idref" href="MKNF.Syntax.html#FImp"><span class="id" title="constructor">FImp</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 90, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">mknf_scope</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+This is a useful function that counts the size of the formula, in which each atom and each operator contributes 1. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Fixpoint</span> <a id="size" class="idref" href="#size"><span class="id" title="definition">size</span></a> {<a id="n:5" class="idref" href="#n:5"><span class="id" title="binder">n</span></a>} (<a id="f:6" class="idref" href="#f:6"><span class="id" title="binder">f</span></a> : <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:5"><span class="id" title="variable">n</span></a>) : <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.Syntax.html#f:6"><span class="id" title="variable">f</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FAtom"><span class="id" title="constructor">FAtom</span></a> <span class="id" title="var">_</span> | <a class="idref" href="MKNF.Syntax.html#FBot"><span class="id" title="constructor">FBot</span></a> =&gt; 1<br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FAnd"><span class="id" title="constructor">FAnd</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> | <a class="idref" href="MKNF.Syntax.html#FOr"><span class="id" title="constructor">FOr</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> | <a class="idref" href="MKNF.Syntax.html#FImp"><span class="id" title="constructor">FImp</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#S"><span class="id" title="constructor">S</span></a> (<a class="idref" href="MKNF.Syntax.html#size"><span class="id" title="definition">size</span></a> <span class="id" title="var">p</span> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Peano.html#0dacc1786c5ba797d47dd85006231633"><span class="id" title="notation">+</span></a> <a class="idref" href="MKNF.Syntax.html#size"><span class="id" title="definition">size</span></a> <span class="id" title="var">q</span>)<br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FNeg"><span class="id" title="constructor">FNeg</span></a> <span class="id" title="var">p</span> | <a class="idref" href="MKNF.Syntax.html#FK"><span class="id" title="constructor">FK</span></a> <span class="id" title="var">p</span> | <a class="idref" href="MKNF.Syntax.html#FNot"><span class="id" title="constructor">FNot</span></a> <span class="id" title="var">p</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#S"><span class="id" title="constructor">S</span></a> (<a class="idref" href="MKNF.Syntax.html#size"><span class="id" title="definition">size</span></a> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+This is yet another useful function which counts the modal depth, i.e. the maximum number of nested usages of modal operators <span class="inlinecode"><span class="id" title="var">K</span></span> and <span class="inlinecode"><span class="id" title="var">not</span></span>.
+</div>
+<div class="code">
+<span class="id" title="keyword">Fixpoint</span> <a id="modal_depth" class="idref" href="#modal_depth"><span class="id" title="definition">modal_depth</span></a> {<a id="n:9" class="idref" href="#n:9"><span class="id" title="binder">n</span></a>} (<a id="f:10" class="idref" href="#f:10"><span class="id" title="binder">f</span></a> : <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:9"><span class="id" title="variable">n</span></a>) : <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.Syntax.html#f:10"><span class="id" title="variable">f</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FAtom"><span class="id" title="constructor">FAtom</span></a> <span class="id" title="var">_</span> | <a class="idref" href="MKNF.Syntax.html#FBot"><span class="id" title="constructor">FBot</span></a> =&gt; 0<br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FAnd"><span class="id" title="constructor">FAnd</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> | <a class="idref" href="MKNF.Syntax.html#FOr"><span class="id" title="constructor">FOr</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> | <a class="idref" href="MKNF.Syntax.html#FImp"><span class="id" title="constructor">FImp</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> =&gt; <span class="id" title="definition">Nat.max</span> (<a class="idref" href="MKNF.Syntax.html#modal_depth"><span class="id" title="definition">modal_depth</span></a> <span class="id" title="var">p</span>) (<a class="idref" href="MKNF.Syntax.html#modal_depth"><span class="id" title="definition">modal_depth</span></a> <span class="id" title="var">q</span>)<br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FNeg"><span class="id" title="constructor">FNeg</span></a> <span class="id" title="var">p</span> =&gt; <a class="idref" href="MKNF.Syntax.html#modal_depth"><span class="id" title="definition">modal_depth</span></a> <span class="id" title="var">p</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FK"><span class="id" title="constructor">FK</span></a> <span class="id" title="var">p</span> | <a class="idref" href="MKNF.Syntax.html#FNot"><span class="id" title="constructor">FNot</span></a> <span class="id" title="var">p</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#S"><span class="id" title="constructor">S</span></a> (<a class="idref" href="MKNF.Syntax.html#modal_depth"><span class="id" title="definition">modal_depth</span></a> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A formula is objective when it doesn't contain any modal operator at all: its truth depends only on the atom values in one world. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Fixpoint</span> <a id="objectiveb" class="idref" href="#objectiveb"><span class="id" title="definition">objectiveb</span></a> {<a id="n:13" class="idref" href="#n:13"><span class="id" title="binder">n</span></a>} (<a id="f:14" class="idref" href="#f:14"><span class="id" title="binder">f</span></a> : <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:13"><span class="id" title="variable">n</span></a>) : <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.Syntax.html#f:14"><span class="id" title="variable">f</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FAtom"><span class="id" title="constructor">FAtom</span></a> <span class="id" title="var">_</span> | <a class="idref" href="MKNF.Syntax.html#FBot"><span class="id" title="constructor">FBot</span></a> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FAnd"><span class="id" title="constructor">FAnd</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> | <a class="idref" href="MKNF.Syntax.html#FOr"><span class="id" title="constructor">FOr</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> | <a class="idref" href="MKNF.Syntax.html#FImp"><span class="id" title="constructor">FImp</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> =&gt; <a class="idref" href="MKNF.Syntax.html#objectiveb"><span class="id" title="definition">objectiveb</span></a> <span class="id" title="var">p</span> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#::bool_scope:x_'&amp;&amp;'_x"><span class="id" title="notation">&amp;&amp;</span></a> <a class="idref" href="MKNF.Syntax.html#objectiveb"><span class="id" title="definition">objectiveb</span></a> <span class="id" title="var">q</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FNeg"><span class="id" title="constructor">FNeg</span></a> <span class="id" title="var">p</span> =&gt; <a class="idref" href="MKNF.Syntax.html#objectiveb"><span class="id" title="definition">objectiveb</span></a> <span class="id" title="var">p</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FK"><span class="id" title="constructor">FK</span></a> <span class="id" title="var">_</span> | <a class="idref" href="MKNF.Syntax.html#FNot"><span class="id" title="constructor">FNot</span></a> <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A formula is positive when there are no occurrences of the <span class="inlinecode"><span class="id" title="var">not</span></span> modal operator.
+</div>
+<div class="code">
+<span class="id" title="keyword">Fixpoint</span> <a id="positiveb" class="idref" href="#positiveb"><span class="id" title="definition">positiveb</span></a> {<a id="n:17" class="idref" href="#n:17"><span class="id" title="binder">n</span></a>} (<a id="f:18" class="idref" href="#f:18"><span class="id" title="binder">f</span></a> : <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:17"><span class="id" title="variable">n</span></a>) : <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.Syntax.html#f:18"><span class="id" title="variable">f</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FAtom"><span class="id" title="constructor">FAtom</span></a> <span class="id" title="var">_</span> | <a class="idref" href="MKNF.Syntax.html#FBot"><span class="id" title="constructor">FBot</span></a> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FAnd"><span class="id" title="constructor">FAnd</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> | <a class="idref" href="MKNF.Syntax.html#FOr"><span class="id" title="constructor">FOr</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> | <a class="idref" href="MKNF.Syntax.html#FImp"><span class="id" title="constructor">FImp</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> =&gt; <a class="idref" href="MKNF.Syntax.html#positiveb"><span class="id" title="definition">positiveb</span></a> <span class="id" title="var">p</span> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#::bool_scope:x_'&amp;&amp;'_x"><span class="id" title="notation">&amp;&amp;</span></a> <a class="idref" href="MKNF.Syntax.html#positiveb"><span class="id" title="definition">positiveb</span></a> <span class="id" title="var">q</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FNeg"><span class="id" title="constructor">FNeg</span></a> <span class="id" title="var">p</span> | <a class="idref" href="MKNF.Syntax.html#FK"><span class="id" title="constructor">FK</span></a> <span class="id" title="var">p</span> =&gt; <a class="idref" href="MKNF.Syntax.html#positiveb"><span class="id" title="definition">positiveb</span></a> <span class="id" title="var">p</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FNot"><span class="id" title="constructor">FNot</span></a> <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Transforming the boolean checks into propositions. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <a id="Objective" class="idref" href="#Objective"><span class="id" title="definition">Objective</span></a> {<a id="n:21" class="idref" href="#n:21"><span class="id" title="binder">n</span></a>} (<a id="f:22" class="idref" href="#f:22"><span class="id" title="binder">f</span></a> : <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:21"><span class="id" title="variable">n</span></a>) : <span class="id" title="keyword">Prop</span> := <a class="idref" href="MKNF.Syntax.html#objectiveb"><span class="id" title="definition">objectiveb</span></a> <a class="idref" href="MKNF.Syntax.html#f:22"><span class="id" title="variable">f</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <a id="Positive" class="idref" href="#Positive"><span class="id" title="definition">Positive</span></a> {<a id="n:23" class="idref" href="#n:23"><span class="id" title="binder">n</span></a>} (<a id="f:24" class="idref" href="#f:24"><span class="id" title="binder">f</span></a> : <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:23"><span class="id" title="variable">n</span></a>) : <span class="id" title="keyword">Prop</span> := <a class="idref" href="MKNF.Syntax.html#positiveb"><span class="id" title="definition">positiveb</span></a> <a class="idref" href="MKNF.Syntax.html#f:24"><span class="id" title="variable">f</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+An important theorem is the fact that objective formulas are exactly the ones in which the modal dept is 0. The two definitions are therefore consistent. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Lemma</span> <a id="objective_no_modal" class="idref" href="#objective_no_modal"><span class="id" title="lemma">objective_no_modal</span></a> {<a id="n:25" class="idref" href="#n:25"><span class="id" title="binder">n</span></a>} (<a id="f:26" class="idref" href="#f:26"><span class="id" title="binder">f</span></a> : <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:25"><span class="id" title="variable">n</span></a>) :<br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Syntax.html#Objective"><span class="id" title="definition">Objective</span></a> <a class="idref" href="MKNF.Syntax.html#f:26"><span class="id" title="variable">f</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">&lt;-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#modal_depth"><span class="id" title="definition">modal_depth</span></a> <a class="idref" href="MKNF.Syntax.html#f:26"><span class="id" title="variable">f</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> 0.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <a class="idref" href="MKNF.Syntax.html#Objective"><span class="id" title="definition">Objective</span></a>. <span class="id" title="tactic">induction</span> <span class="id" title="var">f</span>.<br/>
+&nbsp;-  <span class="id" title="var">easy</span>.<br/>
+&nbsp;-  <span class="id" title="var">easy</span>.<br/>
+&nbsp;-  <span class="id" title="tactic">simpl</span>. <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">andb_true_iff</span>. <span class="id" title="tactic">rewrite</span> <span class="id" title="var">IHf1</span>, <span class="id" title="var">IHf2</span>.<br/>
+&nbsp;<span class="id" title="tactic">destruct</span> (<a class="idref" href="MKNF.Syntax.html#modal_depth"><span class="id" title="definition">modal_depth</span></a> <span class="id" title="var">f1</span>), (<a class="idref" href="MKNF.Syntax.html#modal_depth"><span class="id" title="definition">modal_depth</span></a> <span class="id" title="var">f2</span>); <span class="id" title="var">easy</span>.<br/>
+&nbsp;-  <span class="id" title="tactic">simpl</span>.  <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">andb_true_iff</span>. <span class="id" title="tactic">rewrite</span> <span class="id" title="var">IHf1</span>, <span class="id" title="var">IHf2</span>.<br/>
+&nbsp;<span class="id" title="tactic">destruct</span> (<a class="idref" href="MKNF.Syntax.html#modal_depth"><span class="id" title="definition">modal_depth</span></a> <span class="id" title="var">f1</span>), (<a class="idref" href="MKNF.Syntax.html#modal_depth"><span class="id" title="definition">modal_depth</span></a> <span class="id" title="var">f2</span>); <span class="id" title="var">easy</span>.<br/>
+&nbsp;-  <span class="id" title="tactic">simpl</span>.  <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">andb_true_iff</span>. <span class="id" title="tactic">rewrite</span> <span class="id" title="var">IHf1</span>, <span class="id" title="var">IHf2</span>.<br/>
+&nbsp;<span class="id" title="tactic">destruct</span> (<a class="idref" href="MKNF.Syntax.html#modal_depth"><span class="id" title="definition">modal_depth</span></a> <span class="id" title="var">f1</span>), (<a class="idref" href="MKNF.Syntax.html#modal_depth"><span class="id" title="definition">modal_depth</span></a> <span class="id" title="var">f2</span>); <span class="id" title="var">easy</span>.<br/>
+&nbsp;-  <span class="id" title="var">easy</span>.<br/>
+&nbsp;-  <span class="id" title="var">easy</span>.<br/>
+&nbsp;-  <span class="id" title="var">easy</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+This will be useful later, trust me. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <a id="positive_query" class="idref" href="#positive_query"><span class="id" title="definition">positive_query</span></a> {<a id="n:27" class="idref" href="#n:27"><span class="id" title="binder">n</span></a>} (<a id="f:28" class="idref" href="#f:28"><span class="id" title="binder">f</span></a> : <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:27"><span class="id" title="variable">n</span></a>) : <span class="id" title="keyword">Prop</span> := <a class="idref" href="MKNF.Syntax.html#Positive"><span class="id" title="definition">Positive</span></a> <a class="idref" href="MKNF.Syntax.html#f:28"><span class="id" title="variable">f</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab2"></a><h2 class="section">Named propositional front end</h2>
+
+
+<div class="paragraph"> </div>
+
+    The solver uses <span class="inlinecode"><span class="id" title="var">Fin.t</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span> indices for atoms, but names are easier to write and read.  <span class="inlinecode"><a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a></span> supplies that input syntax.  A symbol table translates names to indices, and missing names cause the translation to fail.
+    Once translated, the formula can be passed to the verified solver.
+
+<div class="paragraph"> </div>
+
+ The grammar is the same.
+</div>
+<div class="code">
+<span class="id" title="keyword">Inductive</span> <a id="named_formula" class="idref" href="#named_formula"><span class="id" title="definition, inductive"><span id="named_formula_rect" class="id"><span id="named_formula_ind" class="id"><span id="named_formula_rec" class="id"><span id="named_formula_sind" class="id">named_formula</span></span></span></span></span></a> : <span class="id" title="keyword">Type</span> :=<br/>
+| <a id="NAtom" class="idref" href="#NAtom"><span class="id" title="constructor">NAtom</span></a> : <span class="id" title="inductive">string</span> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a><br/>
+| <a id="NBot" class="idref" href="#NBot"><span class="id" title="constructor">NBot</span></a> : <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a><br/>
+| <a id="NAnd" class="idref" href="#NAnd"><span class="id" title="constructor">NAnd</span></a> : <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a><br/>
+| <a id="NOr" class="idref" href="#NOr"><span class="id" title="constructor">NOr</span></a> : <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a><br/>
+| <a id="NImp" class="idref" href="#NImp"><span class="id" title="constructor">NImp</span></a> : <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a><br/>
+| <a id="NNeg" class="idref" href="#NNeg"><span class="id" title="constructor">NNeg</span></a> : <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a><br/>
+| <a id="NK" class="idref" href="#NK"><span class="id" title="constructor">NK</span></a> : <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a><br/>
+| <a id="NNot" class="idref" href="#NNot"><span class="id" title="constructor">NNot</span></a> : <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A list mapping atom names to internal indices.
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <a id="symbol_table" class="idref" href="#symbol_table"><span class="id" title="definition">symbol_table</span></a> <a id="n:31" class="idref" href="#n:31"><span class="id" title="binder">n</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> (<span class="id" title="inductive">string</span> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> <span class="id" title="inductive">Fin.t</span> <a class="idref" href="MKNF.Syntax.html#n:31"><span class="id" title="variable">n</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Resolve an atom's name in the symbol table. Return the index from the first
+    matching entry, or <span class="inlinecode"><a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a></span> if the name is missing. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Fixpoint</span> <a id="resolve_atom" class="idref" href="#resolve_atom"><span class="id" title="definition">resolve_atom</span></a> {<a id="n:32" class="idref" href="#n:32"><span class="id" title="binder">n</span></a>} (<a id="symbols:33" class="idref" href="#symbols:33"><span class="id" title="binder">symbols</span></a> : <a class="idref" href="MKNF.Syntax.html#symbol_table"><span class="id" title="definition">symbol_table</span></a> <a class="idref" href="MKNF.Syntax.html#n:32"><span class="id" title="variable">n</span></a>) (<a id="name:34" class="idref" href="#name:34"><span class="id" title="binder">name</span></a> : <span class="id" title="inductive">string</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#option"><span class="id" title="inductive">option</span></a> (<span class="id" title="inductive">Fin.t</span> <a class="idref" href="MKNF.Syntax.html#n:32"><span class="id" title="variable">n</span></a>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.Syntax.html#symbols:33"><span class="id" title="variable">symbols</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="notation">[]</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a><br/>
+&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><span class="id" title="var">candidate</span><a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">atom</span><a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#::list_scope:x_'::'_x"><span class="id" title="notation">::</span></a> <span class="id" title="var">tl</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">if</span> <span class="id" title="definition">String.eqb</span> <a class="idref" href="MKNF.Syntax.html#name:34"><span class="id" title="variable">name</span></a> <span class="id" title="var">candidate</span> <span class="id" title="keyword">then</span> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">atom</span> <span class="id" title="keyword">else</span> <a class="idref" href="MKNF.Syntax.html#resolve_atom"><span class="id" title="definition">resolve_atom</span></a> <span class="id" title="var">tl</span> <a class="idref" href="MKNF.Syntax.html#name:34"><span class="id" title="variable">name</span></a><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Translate a named formula to the indexed syntax. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Fixpoint</span> <a id="resolve_named_formula" class="idref" href="#resolve_named_formula"><span class="id" title="definition">resolve_named_formula</span></a> {<a id="n:37" class="idref" href="#n:37"><span class="id" title="binder">n</span></a>} (<a id="symbols:38" class="idref" href="#symbols:38"><span class="id" title="binder">symbols</span></a> : <a class="idref" href="MKNF.Syntax.html#symbol_table"><span class="id" title="definition">symbol_table</span></a> <a class="idref" href="MKNF.Syntax.html#n:37"><span class="id" title="variable">n</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="f:39" class="idref" href="#f:39"><span class="id" title="binder">f</span></a> : <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a>) : <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#option"><span class="id" title="inductive">option</span></a> (<a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:37"><span class="id" title="variable">n</span></a>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.Syntax.html#f:39"><span class="id" title="variable">f</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#NAtom"><span class="id" title="constructor">NAtom</span></a> <span class="id" title="var">name</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.Syntax.html#resolve_atom"><span class="id" title="definition">resolve_atom</span></a> <a class="idref" href="MKNF.Syntax.html#symbols:38"><span class="id" title="variable">symbols</span></a> <span class="id" title="var">name</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">atom</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="MKNF.Syntax.html#FAtom"><span class="id" title="constructor">FAtom</span></a> <span class="id" title="var">atom</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#NBot"><span class="id" title="constructor">NBot</span></a> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="MKNF.Syntax.html#FBot"><span class="id" title="constructor">FBot</span></a><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#NAnd"><span class="id" title="constructor">NAnd</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.Syntax.html#resolve_named_formula"><span class="id" title="definition">resolve_named_formula</span></a> <a class="idref" href="MKNF.Syntax.html#symbols:38"><span class="id" title="variable">symbols</span></a> <span class="id" title="var">p</span>, <a class="idref" href="MKNF.Syntax.html#resolve_named_formula"><span class="id" title="definition">resolve_named_formula</span></a> <a class="idref" href="MKNF.Syntax.html#symbols:38"><span class="id" title="variable">symbols</span></a> <span class="id" title="var">q</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">p'</span>, <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">q'</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="MKNF.Syntax.html#FAnd"><span class="id" title="constructor">FAnd</span></a> <span class="id" title="var">p'</span> <span class="id" title="var">q'</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span>, <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#NOr"><span class="id" title="constructor">NOr</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.Syntax.html#resolve_named_formula"><span class="id" title="definition">resolve_named_formula</span></a> <a class="idref" href="MKNF.Syntax.html#symbols:38"><span class="id" title="variable">symbols</span></a> <span class="id" title="var">p</span>, <a class="idref" href="MKNF.Syntax.html#resolve_named_formula"><span class="id" title="definition">resolve_named_formula</span></a> <a class="idref" href="MKNF.Syntax.html#symbols:38"><span class="id" title="variable">symbols</span></a> <span class="id" title="var">q</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">p'</span>, <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">q'</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="MKNF.Syntax.html#FOr"><span class="id" title="constructor">FOr</span></a> <span class="id" title="var">p'</span> <span class="id" title="var">q'</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span>, <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#NImp"><span class="id" title="constructor">NImp</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.Syntax.html#resolve_named_formula"><span class="id" title="definition">resolve_named_formula</span></a> <a class="idref" href="MKNF.Syntax.html#symbols:38"><span class="id" title="variable">symbols</span></a> <span class="id" title="var">p</span>, <a class="idref" href="MKNF.Syntax.html#resolve_named_formula"><span class="id" title="definition">resolve_named_formula</span></a> <a class="idref" href="MKNF.Syntax.html#symbols:38"><span class="id" title="variable">symbols</span></a> <span class="id" title="var">q</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">p'</span>, <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">q'</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="MKNF.Syntax.html#FImp"><span class="id" title="constructor">FImp</span></a> <span class="id" title="var">p'</span> <span class="id" title="var">q'</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span>, <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#NNeg"><span class="id" title="constructor">NNeg</span></a> <span class="id" title="var">p</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.Syntax.html#resolve_named_formula"><span class="id" title="definition">resolve_named_formula</span></a> <a class="idref" href="MKNF.Syntax.html#symbols:38"><span class="id" title="variable">symbols</span></a> <span class="id" title="var">p</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">p'</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="MKNF.Syntax.html#FNeg"><span class="id" title="constructor">FNeg</span></a> <span class="id" title="var">p'</span>) | <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#NK"><span class="id" title="constructor">NK</span></a> <span class="id" title="var">p</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.Syntax.html#resolve_named_formula"><span class="id" title="definition">resolve_named_formula</span></a> <a class="idref" href="MKNF.Syntax.html#symbols:38"><span class="id" title="variable">symbols</span></a> <span class="id" title="var">p</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">p'</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="MKNF.Syntax.html#FK"><span class="id" title="constructor">FK</span></a> <span class="id" title="var">p'</span>) | <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#NNot"><span class="id" title="constructor">NNot</span></a> <span class="id" title="var">p</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.Syntax.html#resolve_named_formula"><span class="id" title="definition">resolve_named_formula</span></a> <a class="idref" href="MKNF.Syntax.html#symbols:38"><span class="id" title="variable">symbols</span></a> <span class="id" title="var">p</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">p'</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="MKNF.Syntax.html#FNot"><span class="id" title="constructor">FNot</span></a> <span class="id" title="var">p'</span>) | <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Translate every formula in a named theory. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Fixpoint</span> <a id="resolve_named_theory" class="idref" href="#resolve_named_theory"><span class="id" title="definition">resolve_named_theory</span></a> {<a id="n:42" class="idref" href="#n:42"><span class="id" title="binder">n</span></a>} (<a id="symbols:43" class="idref" href="#symbols:43"><span class="id" title="binder">symbols</span></a> : <a class="idref" href="MKNF.Syntax.html#symbol_table"><span class="id" title="definition">symbol_table</span></a> <a class="idref" href="MKNF.Syntax.html#n:42"><span class="id" title="variable">n</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="t:44" class="idref" href="#t:44"><span class="id" title="binder">t</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="MKNF.Syntax.html#named_formula"><span class="id" title="inductive">named_formula</span></a>) : <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#option"><span class="id" title="inductive">option</span></a> (<a class="idref" href="MKNF.Syntax.html#theory"><span class="id" title="definition">theory</span></a> <a class="idref" href="MKNF.Syntax.html#n:42"><span class="id" title="variable">n</span></a>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.Syntax.html#t:44"><span class="id" title="variable">t</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="notation">[]</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="notation">[]</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">f</span> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#::list_scope:x_'::'_x"><span class="id" title="notation">::</span></a> <span class="id" title="var">tl</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.Syntax.html#resolve_named_formula"><span class="id" title="definition">resolve_named_formula</span></a> <a class="idref" href="MKNF.Syntax.html#symbols:43"><span class="id" title="variable">symbols</span></a> <span class="id" title="var">f</span>, <a class="idref" href="MKNF.Syntax.html#resolve_named_theory"><span class="id" title="definition">resolve_named_theory</span></a> <a class="idref" href="MKNF.Syntax.html#symbols:43"><span class="id" title="variable">symbols</span></a> <span class="id" title="var">tl</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">f'</span>, <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">tl'</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<span class="id" title="var">f'</span> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#::list_scope:x_'::'_x"><span class="id" title="notation">::</span></a> <span class="id" title="var">tl'</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span>, <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab3"></a><h2 class="section">MBNF syntax</h2>
+
+
+<div class="paragraph"> </div>
+
+    This part is related to MBNF, the other logic studied in these chapters.
+
+<div class="paragraph"> </div>
+
+<pre>
+    mbnf-formula ::= atom | bottom
+                   | "(" mbnf-formula "and" mbnf-formula ")"
+                   | "(" mbnf-formula "or" mbnf-formula ")"
+                   | "(" mbnf-formula "-&gt;" mbnf-formula ")"
+                   | "classical-not" mbnf-formula
+                   | "B" mbnf-formula                         MBBelief
+                   | "not" mbnf-formula                       MBNot
+</pre>
+
+<div class="paragraph"> </div>
+
+
+<div class="paragraph"> </div>
+
+ The syntax tree for MBNF 
+</div>
+<div class="code">
+<span class="id" title="keyword">Inductive</span> <a id="mbnf_formula" class="idref" href="#mbnf_formula"><span class="id" title="definition, inductive"><span id="mbnf_formula_rect" class="id"><span id="mbnf_formula_ind" class="id"><span id="mbnf_formula_rec" class="id"><span id="mbnf_formula_sind" class="id">mbnf_formula</span></span></span></span></span></a> (<a id="n:47" class="idref" href="#n:47"><span class="id" title="binder">n</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>) : <span class="id" title="keyword">Type</span> :=<br/>
+| <a id="MBAtom" class="idref" href="#MBAtom"><span class="id" title="constructor">MBAtom</span></a> : <span class="id" title="inductive">Fin.t</span> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a><br/>
+| <a id="MBBot" class="idref" href="#MBBot"><span class="id" title="constructor">MBBot</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a><br/>
+| <a id="MBAnd" class="idref" href="#MBAnd"><span class="id" title="constructor">MBAnd</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a><br/>
+| <a id="MBOr" class="idref" href="#MBOr"><span class="id" title="constructor">MBOr</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a><br/>
+| <a id="MBImp" class="idref" href="#MBImp"><span class="id" title="constructor">MBImp</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a><br/>
+| <a id="MBNeg" class="idref" href="#MBNeg"><span class="id" title="constructor">MBNeg</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a><br/>
+| <a id="MBBelief" class="idref" href="#MBBelief"><span class="id" title="constructor">MBBelief</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a><br/>
+| <a id="MBNot" class="idref" href="#MBNot"><span class="id" title="constructor">MBNot</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:47"><span class="id" title="variable">n</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Arguments</span> <a class="idref" href="MKNF.Syntax.html#MBAtom"><span class="id" title="constructor">MBAtom</span></a> {<span class="id" title="var">n</span>} <span class="id" title="var">_</span>.<br/>
+<span class="id" title="keyword">Arguments</span> <a class="idref" href="MKNF.Syntax.html#MBBot"><span class="id" title="constructor">MBBot</span></a> {<span class="id" title="var">n</span>}.<br/>
+<span class="id" title="keyword">Arguments</span> <a class="idref" href="MKNF.Syntax.html#MBAnd"><span class="id" title="constructor">MBAnd</span></a> {<span class="id" title="var">n</span>} <span class="id" title="var">_</span> <span class="id" title="var">_</span>.<br/>
+<span class="id" title="keyword">Arguments</span> <a class="idref" href="MKNF.Syntax.html#MBOr"><span class="id" title="constructor">MBOr</span></a> {<span class="id" title="var">n</span>} <span class="id" title="var">_</span> <span class="id" title="var">_</span>.<br/>
+<span class="id" title="keyword">Arguments</span> <a class="idref" href="MKNF.Syntax.html#MBImp"><span class="id" title="constructor">MBImp</span></a> {<span class="id" title="var">n</span>} <span class="id" title="var">_</span> <span class="id" title="var">_</span>.<br/>
+<span class="id" title="keyword">Arguments</span> <a class="idref" href="MKNF.Syntax.html#MBNeg"><span class="id" title="constructor">MBNeg</span></a> {<span class="id" title="var">n</span>} <span class="id" title="var">_</span>.<br/>
+<span class="id" title="keyword">Arguments</span> <a class="idref" href="MKNF.Syntax.html#MBBelief"><span class="id" title="constructor">MBBelief</span></a> {<span class="id" title="var">n</span>} <span class="id" title="var">_</span>.<br/>
+<span class="id" title="keyword">Arguments</span> <a class="idref" href="MKNF.Syntax.html#MBNot"><span class="id" title="constructor">MBNot</span></a> {<span class="id" title="var">n</span>} <span class="id" title="var">_</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A list of MBNF formulas to be satisfied together. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <a id="mbnf_theory" class="idref" href="#mbnf_theory"><span class="id" title="definition">mbnf_theory</span></a> <a id="n:50" class="idref" href="#n:50"><span class="id" title="binder">n</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> (<a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:50"><span class="id" title="variable">n</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Notation 
+</div>
+<div class="code">
+<span class="id" title="keyword">Declare Scope</span> <span class="id" title="var">mbnf_scope</span>.<br/>
+<span class="id" title="keyword">Delimit</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">mbnf_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">mbnf</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Notation</span> <a id="7fb088d53277122bd8854cf9d04bed19" class="idref" href="#7fb088d53277122bd8854cf9d04bed19"><span class="id" title="notation">&quot;</span></a>'atom' '(' a ')'" := (<a class="idref" href="MKNF.Syntax.html#MBAtom"><span class="id" title="constructor">MBAtom</span></a> <span class="id" title="var">a</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0, <span class="id" title="var">a</span> <span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 99, <span class="id" title="var">format</span> "'atom' '(' a ')'") : <span class="id" title="var">mbnf_scope</span>.<br/>
+<span class="id" title="keyword">Notation</span> <a id="::mbnf_scope:'bot'" class="idref" href="#::mbnf_scope:'bot'"><span class="id" title="notation">&quot;</span></a>'bot'" := <a class="idref" href="MKNF.Syntax.html#MBBot"><span class="id" title="constructor">MBBot</span></a> : <span class="id" title="var">mbnf_scope</span>.<br/>
+<span class="id" title="keyword">Notation</span> <a id="52540bd007c9182190b66cde5725516a" class="idref" href="#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">&quot;</span></a>~ p" := (<a class="idref" href="MKNF.Syntax.html#MBNeg"><span class="id" title="constructor">MBNeg</span></a> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 75, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">mbnf_scope</span>.<br/>
+<span class="id" title="keyword">Notation</span> <a id="::mbnf_scope:'B'_x" class="idref" href="#::mbnf_scope:'B'_x"><span class="id" title="notation">&quot;</span></a>'B' p" := (<a class="idref" href="MKNF.Syntax.html#MBBelief"><span class="id" title="constructor">MBBelief</span></a> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 75, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">mbnf_scope</span>.<br/>
+<span class="id" title="keyword">Notation</span> <a id="::mbnf_scope:'not'_x" class="idref" href="#::mbnf_scope:'not'_x"><span class="id" title="notation">&quot;</span></a>'not' p" := (<a class="idref" href="MKNF.Syntax.html#MBNot"><span class="id" title="constructor">MBNot</span></a> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 75, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">mbnf_scope</span>.<br/>
+<span class="id" title="keyword">Notation</span> <a id="::mbnf_scope:x_'and'_x" class="idref" href="#::mbnf_scope:x_'and'_x"><span class="id" title="notation">&quot;</span></a>p 'and' q" := (<a class="idref" href="MKNF.Syntax.html#MBAnd"><span class="id" title="constructor">MBAnd</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 80, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">mbnf_scope</span>.<br/>
+<span class="id" title="keyword">Notation</span> <a id="::mbnf_scope:x_'or'_x" class="idref" href="#::mbnf_scope:x_'or'_x"><span class="id" title="notation">&quot;</span></a>p 'or' q" := (<a class="idref" href="MKNF.Syntax.html#MBOr"><span class="id" title="constructor">MBOr</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 85, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">mbnf_scope</span>.<br/>
+<span class="id" title="keyword">Notation</span> <a id="::mbnf_scope:x_'implies'_x" class="idref" href="#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">&quot;</span></a>p 'implies' q" := (<a class="idref" href="MKNF.Syntax.html#MBImp"><span class="id" title="constructor">MBImp</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 90, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">mbnf_scope</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Replace <span class="inlinecode"><span class="id" title="var">K</span></span> with <span class="inlinecode"><span class="id" title="var">B</span></span>, leaving the remaining syntax unchanged. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Fixpoint</span> <a id="mknf_to_mbnf" class="idref" href="#mknf_to_mbnf"><span class="id" title="definition">mknf_to_mbnf</span></a> {<a id="n:51" class="idref" href="#n:51"><span class="id" title="binder">n</span></a>} (<a id="f:52" class="idref" href="#f:52"><span class="id" title="binder">f</span></a> : <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:51"><span class="id" title="variable">n</span></a>) : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:51"><span class="id" title="variable">n</span></a> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.Syntax.html#f:52"><span class="id" title="variable">f</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FAtom"><span class="id" title="constructor">FAtom</span></a> <span class="id" title="var">a</span> =&gt; <a class="idref" href="MKNF.Syntax.html#MBAtom"><span class="id" title="constructor">MBAtom</span></a> <span class="id" title="var">a</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FBot"><span class="id" title="constructor">FBot</span></a> =&gt; <a class="idref" href="MKNF.Syntax.html#MBBot"><span class="id" title="constructor">MBBot</span></a><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FAnd"><span class="id" title="constructor">FAnd</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> =&gt; <a class="idref" href="MKNF.Syntax.html#MBAnd"><span class="id" title="constructor">MBAnd</span></a> (<a class="idref" href="MKNF.Syntax.html#mknf_to_mbnf"><span class="id" title="definition">mknf_to_mbnf</span></a> <span class="id" title="var">p</span>) (<a class="idref" href="MKNF.Syntax.html#mknf_to_mbnf"><span class="id" title="definition">mknf_to_mbnf</span></a> <span class="id" title="var">q</span>)<br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FOr"><span class="id" title="constructor">FOr</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> =&gt; <a class="idref" href="MKNF.Syntax.html#MBOr"><span class="id" title="constructor">MBOr</span></a> (<a class="idref" href="MKNF.Syntax.html#mknf_to_mbnf"><span class="id" title="definition">mknf_to_mbnf</span></a> <span class="id" title="var">p</span>) (<a class="idref" href="MKNF.Syntax.html#mknf_to_mbnf"><span class="id" title="definition">mknf_to_mbnf</span></a> <span class="id" title="var">q</span>)<br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FImp"><span class="id" title="constructor">FImp</span></a> <span class="id" title="var">p</span> <span class="id" title="var">q</span> =&gt; <a class="idref" href="MKNF.Syntax.html#MBImp"><span class="id" title="constructor">MBImp</span></a> (<a class="idref" href="MKNF.Syntax.html#mknf_to_mbnf"><span class="id" title="definition">mknf_to_mbnf</span></a> <span class="id" title="var">p</span>) (<a class="idref" href="MKNF.Syntax.html#mknf_to_mbnf"><span class="id" title="definition">mknf_to_mbnf</span></a> <span class="id" title="var">q</span>)<br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FNeg"><span class="id" title="constructor">FNeg</span></a> <span class="id" title="var">p</span> =&gt; <a class="idref" href="MKNF.Syntax.html#MBNeg"><span class="id" title="constructor">MBNeg</span></a> (<a class="idref" href="MKNF.Syntax.html#mknf_to_mbnf"><span class="id" title="definition">mknf_to_mbnf</span></a> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FK"><span class="id" title="constructor">FK</span></a> <span class="id" title="var">p</span> =&gt; <a class="idref" href="MKNF.Syntax.html#MBBelief"><span class="id" title="constructor">MBBelief</span></a> (<a class="idref" href="MKNF.Syntax.html#mknf_to_mbnf"><span class="id" title="definition">mknf_to_mbnf</span></a> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.Syntax.html#FNot"><span class="id" title="constructor">FNot</span></a> <span class="id" title="var">p</span> =&gt; <a class="idref" href="MKNF.Syntax.html#MBNot"><span class="id" title="constructor">MBNot</span></a> (<a class="idref" href="MKNF.Syntax.html#mknf_to_mbnf"><span class="id" title="definition">mknf_to_mbnf</span></a> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+This one is the true translation: it places a B operator in front of the replacement did before. Its correctness will be proved... later on.
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <a id="subjectivize" class="idref" href="#subjectivize"><span class="id" title="definition">subjectivize</span></a> {<a id="n:55" class="idref" href="#n:55"><span class="id" title="binder">n</span></a>} (<a id="t:56" class="idref" href="#t:56"><span class="id" title="binder">t</span></a> : <a class="idref" href="MKNF.Syntax.html#theory"><span class="id" title="definition">theory</span></a> <a class="idref" href="MKNF.Syntax.html#n:55"><span class="id" title="variable">n</span></a>) : <a class="idref" href="MKNF.Syntax.html#mbnf_theory"><span class="id" title="definition">mbnf_theory</span></a> <a class="idref" href="MKNF.Syntax.html#n:55"><span class="id" title="variable">n</span></a> :=<br/>
+&nbsp;&nbsp;<a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Lists.ListDef.html#map"><span class="id" title="definition">map</span></a> (<span class="id" title="keyword">fun</span> <a id="f:57" class="idref" href="#f:57"><span class="id" title="binder">f</span></a> =&gt; <a class="idref" href="MKNF.Syntax.html#MBBelief"><span class="id" title="constructor">MBBelief</span></a> (<a class="idref" href="MKNF.Syntax.html#mknf_to_mbnf"><span class="id" title="definition">mknf_to_mbnf</span></a> <a class="idref" href="MKNF.Syntax.html#f:57"><span class="id" title="variable">f</span></a>)) <a class="idref" href="MKNF.Syntax.html#t:56"><span class="id" title="variable">t</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The same operation must of course be applied to queries too. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <a id="subjectivize_query" class="idref" href="#subjectivize_query"><span class="id" title="definition">subjectivize_query</span></a> {<a id="n:58" class="idref" href="#n:58"><span class="id" title="binder">n</span></a>} (<a id="q:59" class="idref" href="#q:59"><span class="id" title="binder">q</span></a> : <a class="idref" href="MKNF.Syntax.html#formula"><span class="id" title="inductive">formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:58"><span class="id" title="variable">n</span></a>) : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> <a class="idref" href="MKNF.Syntax.html#n:58"><span class="id" title="variable">n</span></a> :=<br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Syntax.html#MBBelief"><span class="id" title="constructor">MBBelief</span></a> (<a class="idref" href="MKNF.Syntax.html#mknf_to_mbnf"><span class="id" title="definition">mknf_to_mbnf</span></a> <a class="idref" href="MKNF.Syntax.html#q:59"><span class="id" title="variable">q</span></a>).<br/>
+</div>
+<hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

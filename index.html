@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propositional MKNF and MBNF, mechanized</title>
+<link rel="stylesheet" href="html/coqdoc.css"><style>
+#page {width:calc(100% - 40px);max-width:1480px}
+#main {padding:36px clamp(24px,4vw,64px) 48px}
+.actions {display:flex;flex-wrap:wrap;gap:12px;margin:24px 0 34px}
+.actions a {display:inline-flex;gap:10px;align-items:center;padding:11px 18px;border:1px solid var(--line);border-radius:7px;font-weight:650;text-decoration:none;background:var(--paper)}
+.actions a.download {background:var(--accent);color:white;border-color:var(--accent)}
+.actions a:hover {box-shadow:0 2px 8px rgb(30 50 90 / 12%)}
+.actions small {font-size:.7rem;opacity:.8}
+.chapter-grid {display:grid;grid-template-columns:1fr 1fr;gap:26px 42px;margin:30px 0}
+.chapter-grid section {border-top:1px solid var(--line);padding-top:16px}
+.chapter-grid h2 {font-size:1.2rem;margin:0 0 10px}
+.chapter-grid p {margin:0;max-width:65ch}
+.home-foot {border-top:1px solid var(--line);padding-top:20px;margin-top:34px}
+@media(max-width:700px) {#page {width:100%;margin:0}.chapter-grid {grid-template-columns:1fr;gap:22px}#main {padding:24px 20px}.actions {gap:10px}.actions a {width:100%;justify-content:space-between}}
+
+</style></head>
+<body><div id="page"><div id="header"><nav class="site-nav" aria-label="Site navigation">
+<a href="index.html">Start</a><a href="html/toc.html">Contents</a></nav></div>
+<main id="main"><h1>Propositional MKNF and MBNF, mechanized</h1>
+<p class="lead">An introduction to reasoning with incomplete information, with definitions and proofs in Rocq. The chapters build from formulas and their meaning to reasoning algorithms and a worked investigation.</p>
+<div class="actions"><a class="download" href="sources.zip" download="propositional-mknf-mbnf-sources.zip">Download the Rocq sources <small>ZIP</small></a>
+<a href="report.pdf">Read the report <small>PDF</small></a></div>
+<p>Read or work on the sources locally as you follow the chapters. The archive includes a Makefile for building them.</p>
+<div class="chapter-grid">
+<section><h2><a href="html/MKNF.Syntax.html">1. Syntax</a></h2><p>Write formulas about facts, knowledge, belief, and negation as failure.</p></section>
+<section><h2><a href="html/MKNF.Semantics.html">2. Semantics</a></h2><p>Learn how worlds give formulas a meaning, which structures count as models, and when a conclusion follows.</p></section>
+<section><h2><a href="html/MKNF.Algorithms.html">3. Algorithms and correctness</a></h2><p>Turn the model definitions into procedures and prove that their computed answers agree with the semantics.</p></section>
+<section><h2><a href="html/MKNF.MurderMystery.html">4. The case of Mr. Charlie</a></h2><p>Follow the deductions as new clues change the investigation.</p></section>
+</div><p class="home-foot">The <a href="html/MKNF.Finite.html">finite foundations appendix</a> explains how worlds are represented and enumerated. Use the <a href="html/toc.html">complete contents</a> to find a particular definition or result.</p>
+</main></div></body></html>

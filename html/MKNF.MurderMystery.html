@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="coqdoc.css" rel="stylesheet" type="text/css">
+  <title>MKNF and MBNF, mechanised</title>
+</head>
+<body>
+<div id="page">
+<div id="header">
+  <nav class="site-nav" aria-label="Documentation navigation">
+    <a href="../index.html">Start</a>
+    <a href="toc.html">Contents</a>
+    <a href="../sources.zip" download>Sources ZIP</a>
+  </nav>
+</div>
+<div id="main">
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Stdlib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">Bool</span> <span class="id" title="library">List</span> <span class="id" title="library">Vectors.Fin</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MKNF</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="MKNF.Finite.html#"><span class="id" title="library">Finite</span></a> <a class="idref" href="MKNF.Syntax.html#"><span class="id" title="library">Syntax</span></a> <a class="idref" href="MKNF.Semantics.html#"><span class="id" title="library">Semantics</span></a> <a class="idref" href="MKNF.Algorithms.html#"><span class="id" title="library">Algorithms</span></a>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="module">ListNotations</span>.<br/>
+<span class="id" title="keyword">Set Implicit Arguments</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab19"></a><h1 class="section">Chapter 4: The case of Mr. Charlie</h1>
+
+<div class="paragraph"> </div>
+
+<a id="lab20"></a><h2 class="section">Intro</h2>
+
+<div class="paragraph"> </div>
+
+
+<div class="paragraph"> </div>
+
+It was a bleak morning when Detective David and I arrived at Mr. Charlie's house, an imposing, timeworn manor which appeared to date back at least two centuries. Its somewhat dilapidated appearance suggested that it had suffered decades of neglect.
+
+<div class="paragraph"> </div>
+
+As we crossed the threshold, David briefed me.
+
+<div class="paragraph"> </div>
+
+Mr. Charlie had once been a prominent figure in literary circles, until a scandal had partly ruined his reputation, though not his fortune. He had since then withdrawn from public life, living in this secluded estate with his maid, Alice, in this building constantly swept by the cold winds blowing down from the mountains.
+
+<div class="paragraph"> </div>
+
+His only regular visitor was his long-standing acquaintance Bob, a businessman of considerable means who used to bring him the latest gossip and economic news from the city.
+
+<div class="paragraph"> </div>
+
+That had been Mr. Charlie's quiet existence until he was found dead.
+
+<div class="paragraph"> </div>
+
+In his own study.
+
+<div class="paragraph"> </div>
+
+Poisoned.
+
+<div class="paragraph"> </div>
+
+It was Alice who had apparently discovered the body. And, as David explained, the only people in the house the previous day had been Alice and Bob.
+
+<div class="paragraph"> </div>
+
+I glanced at David. There were two people to question and a dead man.
+
+<div class="paragraph"> </div>
+
+The mystery was ours to unravel.
+
+<div class="paragraph"> </div>
+
+<a id="lab21"></a><h2 class="section">Boring background things</h2>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Inductive</span> <a id="case_atom" class="idref" href="#case_atom"><span class="id" title="definition, inductive"><span id="case_atom_rect" class="id"><span id="case_atom_ind" class="id"><span id="case_atom_rec" class="id"><span id="case_atom_sind" class="id">case_atom</span></span></span></span></span></a> : <span class="id" title="keyword">Type</span> :=<br/>
+| <a id="AlicePoisoned" class="idref" href="#AlicePoisoned"><span class="id" title="constructor">AlicePoisoned</span></a> | <a id="BobPoisoned" class="idref" href="#BobPoisoned"><span class="id" title="constructor">BobPoisoned</span></a> | <a id="EvePoisoned" class="idref" href="#EvePoisoned"><span class="id" title="constructor">EvePoisoned</span></a><br/>
+| <a id="AliceUnable" class="idref" href="#AliceUnable"><span class="id" title="constructor">AliceUnable</span></a> | <a id="BobUnable" class="idref" href="#BobUnable"><span class="id" title="constructor">BobUnable</span></a><br/>
+| <a id="EveConfesses" class="idref" href="#EveConfesses"><span class="id" title="constructor">EveConfesses</span></a> | <a id="BobConfesses" class="idref" href="#BobConfesses"><span class="id" title="constructor">BobConfesses</span></a><br/>
+| <a id="AliceOpportunity" class="idref" href="#AliceOpportunity"><span class="id" title="constructor">AliceOpportunity</span></a> | <a id="BobOpportunity" class="idref" href="#BobOpportunity"><span class="id" title="constructor">BobOpportunity</span></a><br/>
+| <a id="AliceAlibiTelegram" class="idref" href="#AliceAlibiTelegram"><span class="id" title="constructor">AliceAlibiTelegram</span></a>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="encode_atom" class="idref" href="#encode_atom"><span class="id" title="definition">encode_atom</span></a> (<a id="x:3" class="idref" href="#x:3"><span class="id" title="binder">x</span></a> : <a class="idref" href="MKNF.MurderMystery.html#case_atom"><span class="id" title="inductive">case_atom</span></a>) : <span class="id" title="inductive">Fin.t</span> 10 :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.MurderMystery.html#x:3"><span class="id" title="variable">x</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.MurderMystery.html#AlicePoisoned"><span class="id" title="constructor">AlicePoisoned</span></a> =&gt; <span class="id" title="constructor">Fin.F1</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.MurderMystery.html#BobPoisoned"><span class="id" title="constructor">BobPoisoned</span></a> =&gt; <span class="id" title="constructor">Fin.FS</span> <span class="id" title="constructor">Fin.F1</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.MurderMystery.html#EvePoisoned"><span class="id" title="constructor">EvePoisoned</span></a> =&gt; <span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> <span class="id" title="constructor">Fin.F1</span>)<br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.MurderMystery.html#AliceUnable"><span class="id" title="constructor">AliceUnable</span></a> =&gt; <span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> <span class="id" title="constructor">Fin.F1</span>))<br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.MurderMystery.html#BobUnable"><span class="id" title="constructor">BobUnable</span></a> =&gt; <span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> <span class="id" title="constructor">Fin.F1</span>)))<br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.MurderMystery.html#EveConfesses"><span class="id" title="constructor">EveConfesses</span></a> =&gt; <span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> <span class="id" title="constructor">Fin.F1</span>))))<br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.MurderMystery.html#BobConfesses"><span class="id" title="constructor">BobConfesses</span></a> =&gt; <span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> <span class="id" title="constructor">Fin.F1</span>)))))<br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.MurderMystery.html#AliceOpportunity"><span class="id" title="constructor">AliceOpportunity</span></a> =&gt; <span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.F1</span>)))))))<br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.MurderMystery.html#BobOpportunity"><span class="id" title="constructor">BobOpportunity</span></a> =&gt; <span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.F1</span>))))))))<br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.MurderMystery.html#AliceAlibiTelegram"><span class="id" title="constructor">AliceAlibiTelegram</span></a> =&gt; <span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.F1</span>)))))))))<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="alice" class="idref" href="#alice"><span class="id" title="definition">alice</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> 10 := <a class="idref" href="MKNF.Syntax.html#MBAtom"><span class="id" title="constructor">MBAtom</span></a> (<a class="idref" href="MKNF.MurderMystery.html#encode_atom"><span class="id" title="definition">encode_atom</span></a> <a class="idref" href="MKNF.MurderMystery.html#AlicePoisoned"><span class="id" title="constructor">AlicePoisoned</span></a>).<br/>
+<span class="id" title="keyword">Definition</span> <a id="bob" class="idref" href="#bob"><span class="id" title="definition">bob</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> 10 := <a class="idref" href="MKNF.Syntax.html#MBAtom"><span class="id" title="constructor">MBAtom</span></a> (<a class="idref" href="MKNF.MurderMystery.html#encode_atom"><span class="id" title="definition">encode_atom</span></a> <a class="idref" href="MKNF.MurderMystery.html#BobPoisoned"><span class="id" title="constructor">BobPoisoned</span></a>).<br/>
+<span class="id" title="keyword">Definition</span> <a id="eve" class="idref" href="#eve"><span class="id" title="definition">eve</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> 10 := <a class="idref" href="MKNF.Syntax.html#MBAtom"><span class="id" title="constructor">MBAtom</span></a> (<a class="idref" href="MKNF.MurderMystery.html#encode_atom"><span class="id" title="definition">encode_atom</span></a> <a class="idref" href="MKNF.MurderMystery.html#EvePoisoned"><span class="id" title="constructor">EvePoisoned</span></a>).<br/>
+<span class="id" title="keyword">Definition</span> <a id="alice_unable" class="idref" href="#alice_unable"><span class="id" title="definition">alice_unable</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> 10 := <a class="idref" href="MKNF.Syntax.html#MBAtom"><span class="id" title="constructor">MBAtom</span></a> (<a class="idref" href="MKNF.MurderMystery.html#encode_atom"><span class="id" title="definition">encode_atom</span></a> <a class="idref" href="MKNF.MurderMystery.html#AliceUnable"><span class="id" title="constructor">AliceUnable</span></a>).<br/>
+<span class="id" title="keyword">Definition</span> <a id="bob_unable" class="idref" href="#bob_unable"><span class="id" title="definition">bob_unable</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> 10 := <a class="idref" href="MKNF.Syntax.html#MBAtom"><span class="id" title="constructor">MBAtom</span></a> (<a class="idref" href="MKNF.MurderMystery.html#encode_atom"><span class="id" title="definition">encode_atom</span></a> <a class="idref" href="MKNF.MurderMystery.html#BobUnable"><span class="id" title="constructor">BobUnable</span></a>).<br/>
+<span class="id" title="keyword">Definition</span> <a id="eve_confesses" class="idref" href="#eve_confesses"><span class="id" title="definition">eve_confesses</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> 10 := <a class="idref" href="MKNF.Syntax.html#MBAtom"><span class="id" title="constructor">MBAtom</span></a> (<a class="idref" href="MKNF.MurderMystery.html#encode_atom"><span class="id" title="definition">encode_atom</span></a> <a class="idref" href="MKNF.MurderMystery.html#EveConfesses"><span class="id" title="constructor">EveConfesses</span></a>).<br/>
+<span class="id" title="keyword">Definition</span> <a id="bob_confesses" class="idref" href="#bob_confesses"><span class="id" title="definition">bob_confesses</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> 10 := <a class="idref" href="MKNF.Syntax.html#MBAtom"><span class="id" title="constructor">MBAtom</span></a> (<a class="idref" href="MKNF.MurderMystery.html#encode_atom"><span class="id" title="definition">encode_atom</span></a> <a class="idref" href="MKNF.MurderMystery.html#BobConfesses"><span class="id" title="constructor">BobConfesses</span></a>).<br/>
+<span class="id" title="keyword">Definition</span> <a id="alice_opportunity" class="idref" href="#alice_opportunity"><span class="id" title="definition">alice_opportunity</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> 10 := <a class="idref" href="MKNF.Syntax.html#MBAtom"><span class="id" title="constructor">MBAtom</span></a> (<a class="idref" href="MKNF.MurderMystery.html#encode_atom"><span class="id" title="definition">encode_atom</span></a> <a class="idref" href="MKNF.MurderMystery.html#AliceOpportunity"><span class="id" title="constructor">AliceOpportunity</span></a>).<br/>
+<span class="id" title="keyword">Definition</span> <a id="bob_opportunity" class="idref" href="#bob_opportunity"><span class="id" title="definition">bob_opportunity</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> 10 := <a class="idref" href="MKNF.Syntax.html#MBAtom"><span class="id" title="constructor">MBAtom</span></a> (<a class="idref" href="MKNF.MurderMystery.html#encode_atom"><span class="id" title="definition">encode_atom</span></a> <a class="idref" href="MKNF.MurderMystery.html#BobOpportunity"><span class="id" title="constructor">BobOpportunity</span></a>).<br/>
+<span class="id" title="keyword">Definition</span> <a id="alice_telegram" class="idref" href="#alice_telegram"><span class="id" title="definition">alice_telegram</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> 10 := <a class="idref" href="MKNF.Syntax.html#MBAtom"><span class="id" title="constructor">MBAtom</span></a> (<a class="idref" href="MKNF.MurderMystery.html#encode_atom"><span class="id" title="definition">encode_atom</span></a> <a class="idref" href="MKNF.MurderMystery.html#AliceAlibiTelegram"><span class="id" title="constructor">AliceAlibiTelegram</span></a>).<br/>
+<span class="id" title="keyword">Definition</span> <a id="exactly_one" class="idref" href="#exactly_one"><span class="id" title="definition">exactly_one</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> 10 :=<br/>
+&nbsp;&nbsp;(<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">(</span></a><a class="idref" href="MKNF.MurderMystery.html#alice"><span class="id" title="definition">alice</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'or'_x"><span class="id" title="notation">or</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob"><span class="id" title="definition">bob</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'or'_x"><span class="id" title="notation">or</span></a> <a class="idref" href="MKNF.MurderMystery.html#eve"><span class="id" title="definition">eve</span></a><a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">)</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">(</span></a><a class="idref" href="MKNF.MurderMystery.html#alice"><span class="id" title="definition">alice</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob"><span class="id" title="definition">bob</span></a><a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">)</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">(</span></a><a class="idref" href="MKNF.MurderMystery.html#alice"><span class="id" title="definition">alice</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.MurderMystery.html#eve"><span class="id" title="definition">eve</span></a><a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">)</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">(</span></a><a class="idref" href="MKNF.MurderMystery.html#bob"><span class="id" title="definition">bob</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.MurderMystery.html#eve"><span class="id" title="definition">eve</span></a><a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">)</span></a>)%<span class="id" title="var">mbnf</span>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="case_laws" class="idref" href="#case_laws"><span class="id" title="definition">case_laws</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> 10 :=<br/>
+&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#exactly_one"><span class="id" title="definition">exactly_one</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">(</span></a><a class="idref" href="MKNF.MurderMystery.html#alice_unable"><span class="id" title="definition">alice_unable</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">implies</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice"><span class="id" title="definition">alice</span></a><a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">)</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">(</span></a><a class="idref" href="MKNF.MurderMystery.html#bob_unable"><span class="id" title="definition">bob_unable</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">implies</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob"><span class="id" title="definition">bob</span></a><a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">)</span></a>)%<span class="id" title="var">mbnf</span>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="alice_default" class="idref" href="#alice_default"><span class="id" title="definition">alice_default</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> 10 :=<br/>
+&nbsp;&nbsp;(<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">(</span></a><a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice_opportunity"><span class="id" title="definition">alice_opportunity</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'not'_x"><span class="id" title="notation">not</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice_unable"><span class="id" title="definition">alice_unable</span></a><a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">)</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">implies</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice"><span class="id" title="definition">alice</span></a>)%<span class="id" title="var">mbnf</span>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="bob_default" class="idref" href="#bob_default"><span class="id" title="definition">bob_default</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> 10 :=<br/>
+&nbsp;&nbsp;(<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">(</span></a><a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob_opportunity"><span class="id" title="definition">bob_opportunity</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice_unable"><span class="id" title="definition">alice_unable</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'not'_x"><span class="id" title="notation">not</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob_unable"><span class="id" title="definition">bob_unable</span></a><a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">)</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">implies</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob"><span class="id" title="definition">bob</span></a>)%<span class="id" title="var">mbnf</span>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="telegram_rule" class="idref" href="#telegram_rule"><span class="id" title="definition">telegram_rule</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> 10 :=<br/>
+&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#alice_telegram"><span class="id" title="definition">alice_telegram</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">implies</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">(</span></a><a class="idref" href="MKNF.MurderMystery.html#alice_unable"><span class="id" title="definition">alice_unable</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice_unable"><span class="id" title="definition">alice_unable</span></a><a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">)</span></a>)%<span class="id" title="var">mbnf</span>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="eve_confession_rule" class="idref" href="#eve_confession_rule"><span class="id" title="definition">eve_confession_rule</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> 10 :=<br/>
+&nbsp;&nbsp;(<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">(</span></a><a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#eve"><span class="id" title="definition">eve</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.MurderMystery.html#eve_confesses"><span class="id" title="definition">eve_confesses</span></a><a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">)</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">implies</span></a> <a class="idref" href="MKNF.MurderMystery.html#eve"><span class="id" title="definition">eve</span></a>)%<span class="id" title="var">mbnf</span>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="bob_confession_rule" class="idref" href="#bob_confession_rule"><span class="id" title="definition">bob_confession_rule</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_formula"><span class="id" title="inductive">mbnf_formula</span></a> 10 :=<br/>
+&nbsp;&nbsp;(<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">(</span></a><a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob"><span class="id" title="definition">bob</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob_confesses"><span class="id" title="definition">bob_confesses</span></a><a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">)</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'implies'_x"><span class="id" title="notation">implies</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob"><span class="id" title="definition">bob</span></a>)%<span class="id" title="var">mbnf</span>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="detective_policy" class="idref" href="#detective_policy"><span class="id" title="definition">detective_policy</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_theory"><span class="id" title="definition">mbnf_theory</span></a> 10 :=<br/>
+&nbsp;&nbsp;<span class="id" title="notation">[</span><a class="idref" href="MKNF.MurderMystery.html#case_laws"><span class="id" title="definition">case_laws</span></a><span class="id" title="notation">;</span> (<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#case_laws"><span class="id" title="definition">case_laws</span></a>)%<span class="id" title="var">mbnf</span><span class="id" title="notation">;</span> <a class="idref" href="MKNF.MurderMystery.html#alice_default"><span class="id" title="definition">alice_default</span></a><span class="id" title="notation">;</span> <a class="idref" href="MKNF.MurderMystery.html#bob_default"><span class="id" title="definition">bob_default</span></a><span class="id" title="notation">;</span> <a class="idref" href="MKNF.MurderMystery.html#telegram_rule"><span class="id" title="definition">telegram_rule</span></a><span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;<a class="idref" href="MKNF.MurderMystery.html#eve_confession_rule"><span class="id" title="definition">eve_confession_rule</span></a><span class="id" title="notation">;</span> <a class="idref" href="MKNF.MurderMystery.html#bob_confession_rule"><span class="id" title="definition">bob_confession_rule</span></a><span class="id" title="notation">]</span>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="initial_evidence" class="idref" href="#initial_evidence"><span class="id" title="definition">initial_evidence</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_theory"><span class="id" title="definition">mbnf_theory</span></a> 10 :=<br/>
+&nbsp;&nbsp;<span class="id" title="notation">[</span><a class="idref" href="MKNF.MurderMystery.html#alice_opportunity"><span class="id" title="definition">alice_opportunity</span></a><span class="id" title="notation">;</span> <a class="idref" href="MKNF.MurderMystery.html#bob_opportunity"><span class="id" title="definition">bob_opportunity</span></a><span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice_opportunity"><span class="id" title="definition">alice_opportunity</span></a>)%<span class="id" title="var">mbnf</span><span class="id" title="notation">;</span> (<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob_opportunity"><span class="id" title="definition">bob_opportunity</span></a>)%<span class="id" title="var">mbnf</span><span class="id" title="notation">]</span>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="stage1" class="idref" href="#stage1"><span class="id" title="definition">stage1</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_theory"><span class="id" title="definition">mbnf_theory</span></a> 10 := <a class="idref" href="MKNF.MurderMystery.html#detective_policy"><span class="id" title="definition">detective_policy</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#bc347c51eaf667706ae54503b26d52c6"><span class="id" title="notation">++</span></a> <a class="idref" href="MKNF.MurderMystery.html#initial_evidence"><span class="id" title="definition">initial_evidence</span></a>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="stage2" class="idref" href="#stage2"><span class="id" title="definition">stage2</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_theory"><span class="id" title="definition">mbnf_theory</span></a> 10 := <a class="idref" href="MKNF.MurderMystery.html#stage1"><span class="id" title="definition">stage1</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#bc347c51eaf667706ae54503b26d52c6"><span class="id" title="notation">++</span></a> <span class="id" title="notation">[</span><a class="idref" href="MKNF.MurderMystery.html#alice_telegram"><span class="id" title="definition">alice_telegram</span></a><span class="id" title="notation">]</span>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="stage3" class="idref" href="#stage3"><span class="id" title="definition">stage3</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_theory"><span class="id" title="definition">mbnf_theory</span></a> 10 := <a class="idref" href="MKNF.MurderMystery.html#stage2"><span class="id" title="definition">stage2</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#bc347c51eaf667706ae54503b26d52c6"><span class="id" title="notation">++</span></a> <span class="id" title="notation">[</span><a class="idref" href="MKNF.MurderMystery.html#eve_confesses"><span class="id" title="definition">eve_confesses</span></a><span class="id" title="notation">]</span>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="stage4" class="idref" href="#stage4"><span class="id" title="definition">stage4</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_theory"><span class="id" title="definition">mbnf_theory</span></a> 10 := <a class="idref" href="MKNF.MurderMystery.html#stage3"><span class="id" title="definition">stage3</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#bc347c51eaf667706ae54503b26d52c6"><span class="id" title="notation">++</span></a> <span class="id" title="notation">[</span><a class="idref" href="MKNF.MurderMystery.html#bob_confesses"><span class="id" title="definition">bob_confesses</span></a><span class="id" title="notation">]</span>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="telegram_policy_check" class="idref" href="#telegram_policy_check"><span class="id" title="definition">telegram_policy_check</span></a> : <a class="idref" href="MKNF.Syntax.html#mbnf_theory"><span class="id" title="definition">mbnf_theory</span></a> 10 :=<br/>
+&nbsp;&nbsp;<span class="id" title="notation">[</span><a class="idref" href="MKNF.MurderMystery.html#case_laws"><span class="id" title="definition">case_laws</span></a><span class="id" title="notation">;</span> (<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#case_laws"><span class="id" title="definition">case_laws</span></a>)%<span class="id" title="var">mbnf</span><span class="id" title="notation">;</span> <a class="idref" href="MKNF.MurderMystery.html#telegram_rule"><span class="id" title="definition">telegram_rule</span></a><span class="id" title="notation">;</span> <a class="idref" href="MKNF.MurderMystery.html#alice_telegram"><span class="id" title="definition">alice_telegram</span></a><span class="id" title="notation">]</span>.<br/>
+<span class="id" title="keyword">Inductive</span> <a id="stage" class="idref" href="#stage"><span class="id" title="definition, inductive"><span id="stage_rect" class="id"><span id="stage_ind" class="id"><span id="stage_rec" class="id"><span id="stage_sind" class="id">stage</span></span></span></span></span></a> : <span class="id" title="keyword">Type</span> :=<br/>
+| <a id="Initial" class="idref" href="#Initial"><span class="id" title="constructor">Initial</span></a> | <a id="AliceAlibi" class="idref" href="#AliceAlibi"><span class="id" title="constructor">AliceAlibi</span></a> | <a id="EveConfession" class="idref" href="#EveConfession"><span class="id" title="constructor">EveConfession</span></a> | <a id="BobConfession" class="idref" href="#BobConfession"><span class="id" title="constructor">BobConfession</span></a> | <a id="TelegramRuleOnly" class="idref" href="#TelegramRuleOnly"><span class="id" title="constructor">TelegramRuleOnly</span></a>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="investigation" class="idref" href="#investigation"><span class="id" title="definition">investigation</span></a> (<a id="s:7" class="idref" href="#s:7"><span class="id" title="binder">s</span></a> : <a class="idref" href="MKNF.MurderMystery.html#stage"><span class="id" title="inductive">stage</span></a>) : <a class="idref" href="MKNF.Syntax.html#mbnf_theory"><span class="id" title="definition">mbnf_theory</span></a> 10 :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.MurderMystery.html#s:7"><span class="id" title="variable">s</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.MurderMystery.html#Initial"><span class="id" title="constructor">Initial</span></a> =&gt; <a class="idref" href="MKNF.MurderMystery.html#stage1"><span class="id" title="definition">stage1</span></a> | <a class="idref" href="MKNF.MurderMystery.html#AliceAlibi"><span class="id" title="constructor">AliceAlibi</span></a> =&gt; <a class="idref" href="MKNF.MurderMystery.html#stage2"><span class="id" title="definition">stage2</span></a> | <a class="idref" href="MKNF.MurderMystery.html#EveConfession"><span class="id" title="constructor">EveConfession</span></a> =&gt; <a class="idref" href="MKNF.MurderMystery.html#stage3"><span class="id" title="definition">stage3</span></a><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.MurderMystery.html#BobConfession"><span class="id" title="constructor">BobConfession</span></a> =&gt; <a class="idref" href="MKNF.MurderMystery.html#stage4"><span class="id" title="definition">stage4</span></a><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.MurderMystery.html#TelegramRuleOnly"><span class="id" title="constructor">TelegramRuleOnly</span></a> =&gt; <a class="idref" href="MKNF.MurderMystery.html#telegram_policy_check"><span class="id" title="definition">telegram_policy_check</span></a><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="initial_partitions" class="idref" href="#initial_partitions"><span class="id" title="definition">initial_partitions</span></a> := <span class="id" title="keyword">Eval</span> <span class="id" title="keyword">vm_compute</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Algorithms.html#rosati_distinct_cached_partitions"><span class="id" title="definition">rosati_distinct_cached_partitions</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage1"><span class="id" title="definition">stage1</span></a>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="alibi_partitions" class="idref" href="#alibi_partitions"><span class="id" title="definition">alibi_partitions</span></a> := <span class="id" title="keyword">Eval</span> <span class="id" title="keyword">vm_compute</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Algorithms.html#rosati_distinct_cached_partitions"><span class="id" title="definition">rosati_distinct_cached_partitions</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage2"><span class="id" title="definition">stage2</span></a>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="eve_partitions" class="idref" href="#eve_partitions"><span class="id" title="definition">eve_partitions</span></a> := <span class="id" title="keyword">Eval</span> <span class="id" title="keyword">vm_compute</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Algorithms.html#rosati_distinct_cached_partitions"><span class="id" title="definition">rosati_distinct_cached_partitions</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage3"><span class="id" title="definition">stage3</span></a>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="final_partitions" class="idref" href="#final_partitions"><span class="id" title="definition">final_partitions</span></a> := <span class="id" title="keyword">Eval</span> <span class="id" title="keyword">vm_compute</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Algorithms.html#rosati_distinct_cached_partitions"><span class="id" title="definition">rosati_distinct_cached_partitions</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage4"><span class="id" title="definition">stage4</span></a>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="telegram_rule_partitions" class="idref" href="#telegram_rule_partitions"><span class="id" title="definition">telegram_rule_partitions</span></a> := <span class="id" title="keyword">Eval</span> <span class="id" title="keyword">vm_compute</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Algorithms.html#rosati_distinct_cached_partitions"><span class="id" title="definition">rosati_distinct_cached_partitions</span></a> <a class="idref" href="MKNF.MurderMystery.html#telegram_policy_check"><span class="id" title="definition">telegram_policy_check</span></a>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="partition_catalogue" class="idref" href="#partition_catalogue"><span class="id" title="definition">partition_catalogue</span></a> (<a id="s:9" class="idref" href="#s:9"><span class="id" title="binder">s</span></a> : <a class="idref" href="MKNF.MurderMystery.html#stage"><span class="id" title="inductive">stage</span></a>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="MKNF.MurderMystery.html#s:9"><span class="id" title="variable">s</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.MurderMystery.html#Initial"><span class="id" title="constructor">Initial</span></a> =&gt; <a class="idref" href="MKNF.MurderMystery.html#initial_partitions"><span class="id" title="definition">initial_partitions</span></a> | <a class="idref" href="MKNF.MurderMystery.html#AliceAlibi"><span class="id" title="constructor">AliceAlibi</span></a> =&gt; <a class="idref" href="MKNF.MurderMystery.html#alibi_partitions"><span class="id" title="definition">alibi_partitions</span></a><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.MurderMystery.html#EveConfession"><span class="id" title="constructor">EveConfession</span></a> =&gt; <a class="idref" href="MKNF.MurderMystery.html#eve_partitions"><span class="id" title="definition">eve_partitions</span></a> | <a class="idref" href="MKNF.MurderMystery.html#BobConfession"><span class="id" title="constructor">BobConfession</span></a> =&gt; <a class="idref" href="MKNF.MurderMystery.html#final_partitions"><span class="id" title="definition">final_partitions</span></a><br/>
+&nbsp;&nbsp;| <a class="idref" href="MKNF.MurderMystery.html#TelegramRuleOnly"><span class="id" title="constructor">TelegramRuleOnly</span></a> =&gt; <a class="idref" href="MKNF.MurderMystery.html#telegram_rule_partitions"><span class="id" title="definition">telegram_rule_partitions</span></a><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <a id="partition_catalogue_complete" class="idref" href="#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a id="s:11" class="idref" href="#s:11"><span class="id" title="binder">s</span></a> :<br/>
+&nbsp;&nbsp;<span class="id" title="definition">filter</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_preferred_partitionb"><span class="id" title="definition">rosati_preferred_partitionb</span></a> (<a class="idref" href="MKNF.MurderMystery.html#investigation"><span class="id" title="definition">investigation</span></a> <a class="idref" href="MKNF.MurderMystery.html#s:11"><span class="id" title="variable">s</span></a>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.Algorithms.html#rosati_distinct_partitions"><span class="id" title="definition">rosati_distinct_partitions</span></a> (<a class="idref" href="MKNF.MurderMystery.html#investigation"><span class="id" title="definition">investigation</span></a> <a class="idref" href="MKNF.MurderMystery.html#s:11"><span class="id" title="variable">s</span></a>)) <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="MKNF.MurderMystery.html#partition_catalogue"><span class="id" title="definition">partition_catalogue</span></a> <a class="idref" href="MKNF.MurderMystery.html#s:11"><span class="id" title="variable">s</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">s</span>; <span class="id" title="tactic">rewrite</span> &lt;- <a class="idref" href="MKNF.Algorithms.html#rosati_distinct_cached_partitions_eq"><span class="id" title="lemma">rosati_distinct_cached_partitions_eq</span></a>; <span class="id" title="keyword">vm_compute</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+<span class="id" title="keyword">Theorem</span> <a id="every_stage_has_a_model" class="idref" href="#every_stage_has_a_model"><span class="id" title="lemma">every_stage_has_a_model</span></a> <a id="s:12" class="idref" href="#s:12"><span class="id" title="binder">s</span></a> :<br/>
+&nbsp;&nbsp;<a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#a883bdd010993579f99d60b3775bcf54"><span class="id" title="notation">exists</span></a> <a id="i:13" class="idref" href="#i:13"><span class="id" title="binder">i</span></a> <a id="m:14" class="idref" href="#m:14"><span class="id" title="binder">m</span></a><a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#a883bdd010993579f99d60b3775bcf54"><span class="id" title="notation">,</span></a> <a class="idref" href="MKNF.Semantics.html#MBNFModel"><span class="id" title="definition">MBNFModel</span></a> (<a class="idref" href="MKNF.MurderMystery.html#investigation"><span class="id" title="definition">investigation</span></a> <a class="idref" href="MKNF.MurderMystery.html#s:12"><span class="id" title="variable">s</span></a>) <a class="idref" href="MKNF.MurderMystery.html#i:13"><span class="id" title="variable">i</span></a> <a class="idref" href="MKNF.MurderMystery.html#m:14"><span class="id" title="variable">m</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="MKNF.Algorithms.html#rosati_distinct_catalogue_has_model"><span class="id" title="lemma">rosati_distinct_catalogue_has_model</span></a> <span class="id" title="keyword">with</span> (<span class="id" title="var">models</span>:=<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue"><span class="id" title="definition">partition_catalogue</span></a> <span class="id" title="var">s</span>).<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">apply</span> <a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a>.<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">destruct</span> <span class="id" title="var">s</span>; <span class="id" title="keyword">vm_compute</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab22"></a><h2 class="section">The crime scene</h2>
+
+<div class="paragraph"> </div>
+
+
+<div class="paragraph"> </div>
+
+We quickly went to the crime scene. The body was still there, cold, a cup of tea spilled on the floor.
+
+<div class="paragraph"> </div>
+
+"I suspect that's where the poison came from", David said.
+
+<div class="paragraph"> </div>
+
+I collected my leather-bound notebook and began recording his observations.
+
+<div class="paragraph"> </div>
+
+"There can be only one culprit: that's how it works in these cases."
+
+<div class="paragraph"> </div>
+
+He stopped, and took a cautious sniff at the cup.
+
+<div class="paragraph"> </div>
+
+"Judging by the inexpensive nature of the poison" he continued, "I infer that it has been a person with limited resources."
+
+<div class="paragraph"> </div>
+
+"So it must have been Alice, the maid?" I inquired. As far as I could tell, she was the only one who had motive, means and opportunity.
+
+<div class="paragraph"> </div>
+
+"Unless proven otherwise, she's our main suspect in this moment. But beware of jumping to conclusions this early. We will question both of them, and see what we can find out.
+I see no reason to suspect Bob at present: he didn't have a motive, given his conditions, and his reputation is as clean as his silver.
+I'm temporarily excluding him, until further evidence comes to light."
+
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <a id="the_initial_default_premises" class="idref" href="#the_initial_default_premises"><span class="id" title="lemma">the_initial_default_premises</span></a> :<br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage1"><span class="id" title="definition">stage1</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice_opportunity"><span class="id" title="definition">alice_opportunity</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob_opportunity"><span class="id" title="definition">bob_opportunity</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'not'_x"><span class="id" title="notation">not</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice_unable"><span class="id" title="definition">alice_unable</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice_unable"><span class="id" title="definition">alice_unable</span></a>)%<span class="id" title="var">mbnf</span>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Print</span> <span class="id" title="var">stage1</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Print</span> <span class="id" title="var">initial_evidence</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#Initial"><span class="id" title="constructor">Initial</span></a>)). <span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">reflexivity</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <a id="initially_alice_is_the_only_believed_culprit" class="idref" href="#initially_alice_is_the_only_believed_culprit"><span class="id" title="lemma">initially_alice_is_the_only_believed_culprit</span></a> :<br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage1"><span class="id" title="definition">stage1</span></a> (<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice"><span class="id" title="definition">alice</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob"><span class="id" title="definition">bob</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#eve"><span class="id" title="definition">eve</span></a>)%<span class="id" title="var">mbnf</span>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#Initial"><span class="id" title="constructor">Initial</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">reflexivity</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab23"></a><h2 class="section">The telegram from the city</h2>
+
+<div class="paragraph"> </div>
+
+
+<div class="paragraph"> </div>
+
+We brought Alice to the kitchen for questioning. The kettle used yesterday was still there. The girl appeared visibly shaken, though that's no proof of innocence nor guilt.
+
+<div class="paragraph"> </div>
+
+"Would you kindly reconstruct your movements before Mr. Charlie's death?" David asked, quiet but firm.
+
+<div class="paragraph"> </div>
+
+"After preparing the tea for both of us and Mr. Bob, I went to the kitchen to clean up, and later to the city to visit my brother. I came back in the very late evening, and went to Mr. Charlie's study to check on him... and..." she hesitated, staring into the void. "That's when I found him.""
+
+<div class="paragraph"> </div>
+
+"You all did take the tea together yesterday?" David asked. If I had not known him, I would have thought he was judging Charlie's choice to take tea with his maid, but I knew David was not a man given to such prejudices.
+
+<div class="paragraph"> </div>
+
+"Yes, and everything was fine at that time. Whoever poisoned it, must have done it after I left for the city."
+
+<div class="paragraph"> </div>
+
+While David continued questioning her, he instructed me to send a telegram to the city seeking confirmation.
+Much to my surprise, the reply arrived within the hour. "CONFIRMED. VISITING ILL BROTHER. STOP."
+Apparently, the suspicion had been misplaced.
+<!-- " -->
+
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <a id="the_telegram_establishes_alices_alibi" class="idref" href="#the_telegram_establishes_alices_alibi"><span class="id" title="lemma">the_telegram_establishes_alices_alibi</span></a> :<br/>
+&nbsp;&nbsp;<a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#63a68285c81db8f9bc456233bb9ed181"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage1"><span class="id" title="definition">stage1</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice_telegram"><span class="id" title="definition">alice_telegram</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#ba2b0e492d2b4675a0acf3ea92aabadd"><span class="id" title="notation">/\</span></a><br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage2"><span class="id" title="definition">stage2</span></a> (<a class="idref" href="MKNF.MurderMystery.html#alice_telegram"><span class="id" title="definition">alice_telegram</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice_unable"><span class="id" title="definition">alice_unable</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice_unable"><span class="id" title="definition">alice_unable</span></a>)%<span class="id" title="var">mbnf</span>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">split</span>.<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">rewrite</span> &lt;- <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#Initial"><span class="id" title="constructor">Initial</span></a>)). <span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">discriminate</span>.<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">apply</span> <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#AliceAlibi"><span class="id" title="constructor">AliceAlibi</span></a>)). <span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">reflexivity</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <a id="the_alibi_changes_the_default_premises" class="idref" href="#the_alibi_changes_the_default_premises"><span class="id" title="lemma">the_alibi_changes_the_default_premises</span></a> :<br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage2"><span class="id" title="definition">stage2</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">(</span></a><a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'not'_x"><span class="id" title="notation">not</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice_unable"><span class="id" title="definition">alice_unable</span></a><a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">)</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice_unable"><span class="id" title="definition">alice_unable</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob_opportunity"><span class="id" title="definition">bob_opportunity</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'not'_x"><span class="id" title="notation">not</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob_unable"><span class="id" title="definition">bob_unable</span></a>)%<span class="id" title="var">mbnf</span>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#AliceAlibi"><span class="id" title="constructor">AliceAlibi</span></a>)). <span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">reflexivity</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <a id="the_alibi_moves_suspicion_to_bob" class="idref" href="#the_alibi_moves_suspicion_to_bob"><span class="id" title="lemma">the_alibi_moves_suspicion_to_bob</span></a> :<br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage2"><span class="id" title="definition">stage2</span></a> (<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob"><span class="id" title="definition">bob</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice"><span class="id" title="definition">alice</span></a>)%<span class="id" title="var">mbnf</span>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#AliceAlibi"><span class="id" title="constructor">AliceAlibi</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">reflexivity</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <a id="the_new_alibi_withdraws_the_old_belief" class="idref" href="#the_new_alibi_withdraws_the_old_belief"><span class="id" title="lemma">the_new_alibi_withdraws_the_old_belief</span></a> :<br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.MurderMystery.html#stage2"><span class="id" title="definition">stage2</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage1"><span class="id" title="definition">stage1</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Datatypes.html#bc347c51eaf667706ae54503b26d52c6"><span class="id" title="notation">++</span></a> <span class="id" title="notation">[</span><a class="idref" href="MKNF.MurderMystery.html#alice_telegram"><span class="id" title="definition">alice_telegram</span></a><span class="id" title="notation">]</span> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#ba2b0e492d2b4675a0acf3ea92aabadd"><span class="id" title="notation">/\</span></a><br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage1"><span class="id" title="definition">stage1</span></a> (<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice"><span class="id" title="definition">alice</span></a>)%<span class="id" title="var">mbnf</span> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#ba2b0e492d2b4675a0acf3ea92aabadd"><span class="id" title="notation">/\</span></a><br/>
+&nbsp;&nbsp;<a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#63a68285c81db8f9bc456233bb9ed181"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage2"><span class="id" title="definition">stage2</span></a> (<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice"><span class="id" title="definition">alice</span></a>)%<span class="id" title="var">mbnf</span>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">split</span>; [<span class="id" title="tactic">reflexivity</span>|]. <span class="id" title="tactic">split</span>.<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">apply</span> <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#Initial"><span class="id" title="constructor">Initial</span></a>)). <span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">rewrite</span> &lt;- <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#AliceAlibi"><span class="id" title="constructor">AliceAlibi</span></a>)). <span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">discriminate</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <a id="the_telegram_alone_does_not_identify_bob" class="idref" href="#the_telegram_alone_does_not_identify_bob"><span class="id" title="lemma">the_telegram_alone_does_not_identify_bob</span></a> :<br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#telegram_policy_check"><span class="id" title="definition">telegram_policy_check</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#alice_unable"><span class="id" title="definition">alice_unable</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice_unable"><span class="id" title="definition">alice_unable</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice"><span class="id" title="definition">alice</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob"><span class="id" title="definition">bob</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#eve"><span class="id" title="definition">eve</span></a>)%<span class="id" title="var">mbnf</span> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#ba2b0e492d2b4675a0acf3ea92aabadd"><span class="id" title="notation">/\</span></a><br/>
+&nbsp;&nbsp;<a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#63a68285c81db8f9bc456233bb9ed181"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#telegram_policy_check"><span class="id" title="definition">telegram_policy_check</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob"><span class="id" title="definition">bob</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">split</span>.<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">apply</span> <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#TelegramRuleOnly"><span class="id" title="constructor">TelegramRuleOnly</span></a>)). <span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">rewrite</span> &lt;- <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#TelegramRuleOnly"><span class="id" title="constructor">TelegramRuleOnly</span></a>)). <span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">discriminate</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab24"></a><h2 class="section">The new suspect</h2>
+
+<div class="paragraph"> </div>
+
+
+<div class="paragraph"> </div>
+
+As the wind continued to howl, we went on to question Bob. We brought him to the kitchen, asking Alice to wait back in the living room.
+
+<div class="paragraph"> </div>
+
+"Why would I ever want to poison my old friend?" he asked, visibly upset.
+"We have known each other for decades, and I've always stood by him, loyal, even when everyone else abandoned him."
+
+<div class="paragraph"> </div>
+
+"Look, we are only trying to assess the situation, Mr. Bob. Alice, the maid, has an alibi. She was in the city visiting her ill brother when the poisoning occurred, as independent witnesses guaranteed. And you were the only other person in the house at the time."
+
+<div class="paragraph"> </div>
+
+"Well, maybe the old man just took his own life. He suffered from low spirits lately, which was precisely the reason for which I intensified my visits here: to try and cheer him up."
+
+<div class="paragraph"> </div>
+
+My sight met David's. This clearly was a case of murder, and the fact that Bob tried to declare otherwise only reinforced the idea that he was the murderer. Yet, without a confession, nothing was to be established.
+
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <a id="suspicion_of_bob_after_the_alibi_is_not_factual_guilt" class="idref" href="#suspicion_of_bob_after_the_alibi_is_not_factual_guilt"><span class="id" title="lemma">suspicion_of_bob_after_the_alibi_is_not_factual_guilt</span></a> :<br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage2"><span class="id" title="definition">stage2</span></a> (<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob"><span class="id" title="definition">bob</span></a>)%<span class="id" title="var">mbnf</span> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#ba2b0e492d2b4675a0acf3ea92aabadd"><span class="id" title="notation">/\</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#63a68285c81db8f9bc456233bb9ed181"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage2"><span class="id" title="definition">stage2</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob"><span class="id" title="definition">bob</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">split</span>.<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">apply</span> <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#AliceAlibi"><span class="id" title="constructor">AliceAlibi</span></a>)). <span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">rewrite</span> &lt;- <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#AliceAlibi"><span class="id" title="constructor">AliceAlibi</span></a>)). <span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">discriminate</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+While the intense discussion was going on, a sudden commotion caught our attention.
+
+<div class="paragraph"> </div>
+
+First, a door slamming open, then the unmistakable sound of an animated discussion between two female voices.
+
+<div class="paragraph"> </div>
+
+Shortly afterwards, two women appeared. One was Alice, the other a woman in her late thirties.
+
+<div class="paragraph"> </div>
+
+"Leave them to their enquiries", Alice said.
+
+<div class="paragraph"> </div>
+
+"I insist to speak with the detective, privately, now!".
+
+<div class="paragraph"> </div>
+
+David and the mysterious woman retired to the kitchen, while I brought both Alice and Bob downstairs to the living room. They sat down on the sofa, still exchanging glances in suspicion.
+
+<div class="paragraph"> </div>
+
+After some minutes, David asked me upstairs. We conferred in whispers.
+
+<div class="paragraph"> </div>
+
+"So, what did you find out?", I asked.
+
+<div class="paragraph"> </div>
+
+"She confessed. Her name's Eve, and she just confessed the crime. But I cannot believe her, since she had no way of being here."
+
+<div class="paragraph"> </div>
+
+I couldn't believe my ears. "If she confessed, then she must be guilty. Why would a person arrive to a crime scene just to lie?"
+
+<div class="paragraph"> </div>
+
+"Money, love, revenge... who knows. The very same reasons that could bring her to kill. I still believe that it has been Bob, but without a confession I cannot establish it beyond any reasonable doubt."
+
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <a id="eve_lacks_the_required_prior_belief" class="idref" href="#eve_lacks_the_required_prior_belief"><span class="id" title="lemma">eve_lacks_the_required_prior_belief</span></a> :<br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage2"><span class="id" title="definition">stage2</span></a> (<a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#eve"><span class="id" title="definition">eve</span></a>)%<span class="id" title="var">mbnf</span>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#AliceAlibi"><span class="id" title="constructor">AliceAlibi</span></a>)). <span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">reflexivity</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <a id="eves_confession_does_not_establish_her_guilt" class="idref" href="#eves_confession_does_not_establish_her_guilt"><span class="id" title="lemma">eves_confession_does_not_establish_her_guilt</span></a> :<br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage3"><span class="id" title="definition">stage3</span></a> (<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob"><span class="id" title="definition">bob</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#eve"><span class="id" title="definition">eve</span></a>)%<span class="id" title="var">mbnf</span> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#ba2b0e492d2b4675a0acf3ea92aabadd"><span class="id" title="notation">/\</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#63a68285c81db8f9bc456233bb9ed181"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage3"><span class="id" title="definition">stage3</span></a> <a class="idref" href="MKNF.MurderMystery.html#eve"><span class="id" title="definition">eve</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">split</span>.<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">apply</span> <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#EveConfession"><span class="id" title="constructor">EveConfession</span></a>)). <span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">rewrite</span> &lt;- <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#EveConfession"><span class="id" title="constructor">EveConfession</span></a>)). <span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">discriminate</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <a id="belief_in_bob_before_his_confession_is_not_factual_guilt" class="idref" href="#belief_in_bob_before_his_confession_is_not_factual_guilt"><span class="id" title="lemma">belief_in_bob_before_his_confession_is_not_factual_guilt</span></a> :<br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage3"><span class="id" title="definition">stage3</span></a> (<a class="idref" href="MKNF.Syntax.html#::mbnf_scope:'B'_x"><span class="id" title="notation">B</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob"><span class="id" title="definition">bob</span></a>)%<span class="id" title="var">mbnf</span> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#ba2b0e492d2b4675a0acf3ea92aabadd"><span class="id" title="notation">/\</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.1.0/stdlib//Corelib.Init.Logic.html#63a68285c81db8f9bc456233bb9ed181"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage3"><span class="id" title="definition">stage3</span></a> <a class="idref" href="MKNF.MurderMystery.html#bob"><span class="id" title="definition">bob</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">split</span>.<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">apply</span> <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#EveConfession"><span class="id" title="constructor">EveConfession</span></a>)). <span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;- <span class="id" title="tactic">rewrite</span> &lt;- <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#EveConfession"><span class="id" title="constructor">EveConfession</span></a>)). <span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">discriminate</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab25"></a><h2 class="section">The confession and the conclusion</h2>
+
+<div class="paragraph"> </div>
+
+
+<div class="paragraph"> </div>
+
+A few days later, we heard that most of Bob's businesses had gone bankrupt, and that he was in no position to pay his debts. After interrogating him, he confessed the crime, and the case was finally closed.
+
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <a id="bob_is_the_factual_culprit" class="idref" href="#bob_is_the_factual_culprit"><span class="id" title="lemma">bob_is_the_factual_culprit</span></a> :<br/>
+&nbsp;&nbsp;<a class="idref" href="MKNF.Semantics.html#MBNFEntails"><span class="id" title="definition">MBNFEntails</span></a> <a class="idref" href="MKNF.MurderMystery.html#stage4"><span class="id" title="definition">stage4</span></a> (<a class="idref" href="MKNF.MurderMystery.html#bob"><span class="id" title="definition">bob</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.MurderMystery.html#alice"><span class="id" title="definition">alice</span></a> <a class="idref" href="MKNF.Syntax.html#::mbnf_scope:x_'and'_x"><span class="id" title="notation">and</span></a> <a class="idref" href="MKNF.Syntax.html#52540bd007c9182190b66cde5725516a"><span class="id" title="notation">~</span></a> <a class="idref" href="MKNF.MurderMystery.html#eve"><span class="id" title="definition">eve</span></a>)%<span class="id" title="var">mbnf</span>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_correct"><span class="id" title="lemma">rosati_general_entailsb_correct</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="MKNF.Algorithms.html#rosati_general_entailsb_from_distinct_catalogue"><span class="id" title="lemma">rosati_general_entailsb_from_distinct_catalogue</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="MKNF.MurderMystery.html#partition_catalogue_complete"><span class="id" title="lemma">partition_catalogue_complete</span></a> <a class="idref" href="MKNF.MurderMystery.html#BobConfession"><span class="id" title="constructor">BobConfession</span></a>)). <span class="id" title="keyword">vm_compute</span>. <span class="id" title="tactic">reflexivity</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

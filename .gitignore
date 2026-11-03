@@ -1,0 +1,23 @@
+# Track the requested sources and published files only.
+*
+!/html/
+!/theories/
+!/.gitignore
+!/Makefile
+!/README.md
+!/_CoqProject
+!/html/MKNF.Algorithms.html
+!/html/MKNF.Finite.html
+!/html/MKNF.MurderMystery.html
+!/html/MKNF.Semantics.html
+!/html/MKNF.Syntax.html
+!/html/coqdoc.css
+!/html/toc.html
+!/index.html
+!/report.pdf
+!/sources.zip
+!/theories/Algorithms.v
+!/theories/Finite.v
+!/theories/MurderMystery.v
+!/theories/Semantics.v
+!/theories/Syntax.v

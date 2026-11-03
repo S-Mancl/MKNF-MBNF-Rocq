@@ -1,1 +1,1 @@
-# MKNF-MBNF-Rocq
+Repository for Propositional MKNF and MBNF, mechanized.
